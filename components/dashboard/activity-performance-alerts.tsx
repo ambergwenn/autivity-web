@@ -1,0 +1,254 @@
+"use client";
+
+import * as React from "react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+
+import {
+  getActivityPerformanceAlerts,
+  type ActivityPerformanceAlertItem,
+} from "@/src/services/dashboard";
+
+const categoryStyles: Record<string, string> = {
+  "Motor Skills": "bg-[#FDE047]/30 border border-[#FDE047]/60 text-[#854D0E]",
+  "Cognitive & Sorting": "bg-[#62A9E6]/10 border border-[#62A9E6]/25 text-[#2E79B9]",
+  "Sensory Regulation": "bg-[#AEE295]/20 border border-[#AEE295]/35 text-[#4D9E27]",
+  "Communication & AAC": "bg-[#E67A88]/15 border border-[#E67A88]/25 text-[#C04A59]",
+  "Social & Turn-Taking": "bg-[#C084FC]/20 border border-[#C084FC]/40 text-[#8A35E5]",
+};
+
+export function ActivityPerformanceAlerts() {
+  const [data, setData] = React.useState<ActivityPerformanceAlertItem[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
+  const [sortBy, setSortBy] = React.useState<string>("highest-bailout");
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadAlerts() {
+      setLoading(true);
+      const items = await getActivityPerformanceAlerts();
+      if (isMounted) {
+        setData(items);
+        setLoading(false);
+      }
+    }
+    loadAlerts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const categories = React.useMemo(() => {
+    const cats = Array.from(new Set(data.map((item) => item.category).filter(Boolean)));
+    return cats.sort();
+  }, [data]);
+
+  // Filter & Sort logic
+  const processedData = React.useMemo(() => {
+    let result = [...data];
+
+    // Filter
+    if (categoryFilter === "high-alerts") {
+      result = result.filter((item) => item.bailoutRate > 30);
+    } else if (categoryFilter !== "all") {
+      result = result.filter((item) => item.category === categoryFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "lowest-bailout":
+          return a.bailoutRate - b.bailoutRate;
+        case "most-sessions":
+          return b.totalSessions - a.totalSessions;
+        case "alphabetical":
+          return a.title.localeCompare(b.title);
+        case "highest-bailout":
+        default:
+          return b.bailoutRate - a.bailoutRate;
+      }
+    });
+
+    return result;
+  }, [data, categoryFilter, sortBy]);
+
+  return (
+    <Card className="w-full flex flex-col gap-0 py-0 border-[2px] border-slate-200/80 shadow-sm rounded-3xl overflow-hidden bg-white hover:shadow-md transition-shadow duration-300">
+      {/* Header with Title, Description, and Select Filters */}
+      <CardHeader className="pb-4 px-6 pt-6 border-b border-slate-100 shrink-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex size-11 items-center justify-center rounded-2xl bg-[#E67A88]/15 text-[#E67A88] shadow-sm shrink-0">
+              <AlertTriangle className="size-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold font-fredoka tracking-wide" style={{ color: "#4B5161" }}>
+                Activity Performance Alerts
+              </CardTitle>
+              <CardDescription className="text-xs font-semibold mt-0.5" style={{ color: "#6B7280" }}>
+                Activities with a bailout rate over 30% require immediate redesign.
+              </CardDescription>
+            </div>
+          </div>
+
+          {/* Filter & Sort Dropdown controls */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Category Filter Selector */}
+            <div className="relative shrink-0">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                aria-label="Filter category"
+                className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer"
+                style={{ color: "#4B5161" }}
+              >
+                <option value="all">All Categories</option>
+                <option value="high-alerts">High Alerts Only</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
+            </div>
+
+            {/* Sort Selector */}
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort activities"
+                className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer"
+                style={{ color: "#4B5161" }}
+              >
+                <option value="highest-bailout">Highest Bailout</option>
+                <option value="lowest-bailout">Lowest Bailout</option>
+                <option value="most-sessions">Most Sessions</option>
+                <option value="alphabetical">Alphabetical (A-Z)</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      {/* Fixed height scrollable content area */}
+      <CardContent className="p-0">
+        <Table containerClassName="max-h-[360px]">
+          {/* Sticky Table Header */}
+          <TableHeader>
+            <TableRow>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs pl-6 border-b border-slate-200 shadow-2xs">
+                Activity Title
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
+                Category
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
+                Difficulty
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
+                Total Sessions
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
+                Bailout Rate
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
+                Avg. Mistakes
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs text-right pr-6 border-b border-slate-200 shadow-2xs">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-slate-400 font-semibold">
+                  Loading activity performance data...
+                </TableCell>
+              </TableRow>
+            ) : processedData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-slate-400 font-semibold">
+                  No matching activities found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              processedData.map((item) => {
+                const isHighBailout = item.bailoutRate > 30;
+                const categoryBadgeClass =
+                  categoryStyles[item.category] ||
+                  "bg-slate-100 border border-slate-200 text-slate-600";
+
+                return (
+                  <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="pl-6 font-bold text-slate-800">
+                      {item.title}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-xl px-2.5 py-1 text-xs font-bold ${categoryBadgeClass}`}>
+                        {item.category}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold text-slate-500">
+                      {item.difficulty}
+                    </TableCell>
+                    <TableCell className="font-mono font-bold text-slate-700">
+                      {item.totalSessions.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {isHighBailout ? (
+                        <div className="inline-flex items-center gap-1.5 rounded-xl bg-[#E67A88]/15 border border-[#E67A88]/30 px-2.5 py-1 text-xs font-bold text-[#E67A88]">
+                          <AlertTriangle className="size-3.5 shrink-0" />
+                          <span>{item.bailoutRate}%</span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-slate-700">
+                          {item.bailoutRate}%
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono font-medium text-slate-600">
+                      {item.avgMistakes}
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
+                      >
+                        Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default ActivityPerformanceAlerts;
