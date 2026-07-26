@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { ClassCards } from "@/components/dashboard/classes/class-cards"
+import { ClassKpiCards } from "@/components/dashboard/classes/class-kpi-cards"
 import { ClassCreateDialog } from "@/components/dashboard/classes/class-create"
 
 export default function ClassPage() {
@@ -66,6 +67,9 @@ export default function ClassPage() {
                     <span>Add New Class</span>
                 </Button>
             </div>
+
+            {/* Class KPI Summary Cards */}
+            <ClassKpiCards refreshTrigger={refreshTrigger} />
 
             {/* Class Cards Grid & Toolbar */}
             <ClassCards refreshTrigger={refreshTrigger} />

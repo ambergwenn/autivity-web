@@ -308,7 +308,7 @@ export function UserTable() {
                                     Users Directory
                                 </CardTitle>
                                 <CardDescription className="text-xs font-semibold mt-0.5" style={{ color: "#6B7280" }}>
-                                    Filter, search, and manage registered accounts.
+                                    Filter, search, and manage registered accounts
                                 </CardDescription>
                             </div>
                         </div>
@@ -316,15 +316,15 @@ export function UserTable() {
                         {/* Filter & Sort Dropdown controls */}
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                             {/* Search Input Box */}
-                            <div className="relative shrink-0">
+                            <div className="relative w-64 sm:w-72 md:w-80 shrink-0">
                                 <Search className="pointer-events-none absolute left-3 top-2.5 size-3.5 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search name or email..."
+                                    placeholder="Search name or email"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     aria-label="Search users"
-                                    className="h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#62A9E6] focus:outline-hidden"
+                                    className="w-full h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#62A9E6] focus:outline-hidden"
                                     style={{ color: "#4B5161" }}
                                 />
                             </div>
@@ -336,10 +336,10 @@ export function UserTable() {
                                         {roleFilter === "all"
                                             ? "All Roles"
                                             : roleFilter === "teacher"
-                                            ? "Teachers"
-                                            : roleFilter === "parent"
-                                            ? "Parents"
-                                            : "Students"}
+                                                ? "Teachers"
+                                                : roleFilter === "parent"
+                                                    ? "Parents"
+                                                    : "Students"}
                                     </span>
                                     <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
                                 </DropdownMenuTrigger>
@@ -372,10 +372,10 @@ export function UserTable() {
                                         {statusFilter === "all"
                                             ? "All Activity"
                                             : statusFilter === "active"
-                                            ? "Active"
-                                            : statusFilter === "inactive"
-                                            ? "Inactive"
-                                            : "Suspended"}
+                                                ? "Active"
+                                                : statusFilter === "inactive"
+                                                    ? "Inactive"
+                                                    : "Suspended"}
                                     </span>
                                     <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
                                 </DropdownMenuTrigger>
@@ -408,8 +408,8 @@ export function UserTable() {
                                         {verificationFilter === "all"
                                             ? "All Verification"
                                             : verificationFilter === "verified"
-                                            ? "Verified"
-                                            : "Pending Verification"}
+                                                ? "Verified"
+                                                : "Pending Verification"}
                                     </span>
                                     <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
                                 </DropdownMenuTrigger>
@@ -441,10 +441,10 @@ export function UserTable() {
                                         {sortBy === "newest"
                                             ? "Newest First"
                                             : sortBy === "oldest"
-                                            ? "Oldest First"
-                                            : sortBy === "name-asc"
-                                            ? "Name (A-Z)"
-                                            : "Name (Z-A)"}
+                                                ? "Oldest First"
+                                                : sortBy === "name-asc"
+                                                    ? "Name (A-Z)"
+                                                    : "Name (Z-A)"}
                                     </span>
                                     <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
                                 </DropdownMenuTrigger>

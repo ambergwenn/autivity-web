@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown, Search } from "lucide-react";
 
 import {
   Card,
@@ -36,6 +36,7 @@ const categoryStyles: Record<string, string> = {
 export function ActivityPerformanceAlerts() {
   const [data, setData] = React.useState<ActivityPerformanceAlertItem[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
   const [sortBy, setSortBy] = React.useState<string>("highest-bailout");
 
@@ -64,7 +65,17 @@ export function ActivityPerformanceAlerts() {
   const processedData = React.useMemo(() => {
     let result = [...data];
 
-    // Filter
+    // Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q)
+      );
+    }
+
+    // Category filter
     if (categoryFilter === "high-alerts") {
       result = result.filter((item) => item.bailoutRate > 30);
     } else if (categoryFilter !== "all") {
@@ -87,7 +98,7 @@ export function ActivityPerformanceAlerts() {
     });
 
     return result;
-  }, [data, categoryFilter, sortBy]);
+  }, [data, searchQuery, categoryFilter, sortBy]);
 
   return (
     <Card className="w-full flex flex-col gap-0 py-0 border-[2px] border-slate-200/80 shadow-sm rounded-3xl overflow-hidden bg-white hover:shadow-md transition-shadow duration-300">
@@ -110,6 +121,20 @@ export function ActivityPerformanceAlerts() {
 
           {/* Filter & Sort Dropdown controls */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Search Input Box */}
+            <div className="relative w-64 sm:w-72 md:w-80 shrink-0">
+              <Search className="pointer-events-none absolute left-3 top-2.5 size-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search activity name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search activities"
+                className="w-full h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#62A9E6] focus:outline-hidden"
+                style={{ color: "#4B5161" }}
+              />
+            </div>
+
             {/* Category Filter Selector */}
             <div className="relative shrink-0">
               <select
@@ -157,7 +182,7 @@ export function ActivityPerformanceAlerts() {
           <TableHeader>
             <TableRow>
               <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs pl-6 border-b border-slate-200 shadow-2xs">
-                Activity Title
+                Name
               </TableHead>
               <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
                 Category
@@ -202,7 +227,7 @@ export function ActivityPerformanceAlerts() {
 
                 return (
                   <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="pl-6 font-bold text-slate-800">
+                    <TableCell className="pl-6 font-bold text-[#4B5161]">
                       {item.title}
                     </TableCell>
                     <TableCell>

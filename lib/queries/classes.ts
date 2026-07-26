@@ -291,3 +291,65 @@ export async function createClass(newClass: {
     return { success: false, error };
   }
 }
+
+export interface ClassKpiStatsData {
+  activeClassesCount: number;
+  archivedClassesCount: number;
+  activeClassesThisMonth: number;
+  archivedClassesThisMonth: number;
+}
+
+/**
+ * Fetches summary KPI metrics for active and archived classes.
+ */
+export async function getClassKpiStats(): Promise<ClassKpiStatsData> {
+  try {
+    const { data, error } = await supabase
+      .from("classes")
+      .select("is_archived, created_at");
+
+    if (error) {
+      console.error("Error fetching class KPI stats:", error);
+      throw error;
+    }
+
+    const classes = data || [];
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let activeClassesCount = 0;
+    let archivedClassesCount = 0;
+    let activeClassesThisMonth = 0;
+    let archivedClassesThisMonth = 0;
+
+    for (const c of classes) {
+      const isArchived = Boolean(c.is_archived);
+      const isThisMonth = c.created_at
+        ? new Date(c.created_at) >= firstDayOfMonth
+        : false;
+
+      if (isArchived) {
+        archivedClassesCount++;
+        if (isThisMonth) archivedClassesThisMonth++;
+      } else {
+        activeClassesCount++;
+        if (isThisMonth) activeClassesThisMonth++;
+      }
+    }
+
+    return {
+      activeClassesCount,
+      archivedClassesCount,
+      activeClassesThisMonth,
+      archivedClassesThisMonth,
+    };
+  } catch (error) {
+    console.error("Error in getClassKpiStats:", error);
+    return {
+      activeClassesCount: 0,
+      archivedClassesCount: 0,
+      activeClassesThisMonth: 0,
+      archivedClassesThisMonth: 0,
+    };
+  }
+}

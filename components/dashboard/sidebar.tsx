@@ -47,7 +47,7 @@ const navItems = [
         items: [
             { title: "Users", href: "/dashboard/user", icon: Users },
             { title: "Classes", href: "/dashboard/class", icon: BookOpen },
-            { title: "Content", href: "/dashboard/content", icon: Puzzle },
+            { title: "Content", href: "/dashboard/activities", icon: Puzzle },
         ],
     },
     {
