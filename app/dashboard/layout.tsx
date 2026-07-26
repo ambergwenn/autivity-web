@@ -21,7 +21,8 @@ export default function DashboardLayout({
         if (pathname.startsWith("/dashboard/class")) return "Classes"
         if (pathname.startsWith("/dashboard/activities")) return "Content"
         if (pathname.startsWith("/dashboard/content")) return "Content"
-        if (pathname.startsWith("/dashboard/admins")) return "Admins"
+        if (pathname.startsWith("/dashboard/admin")) return "Admins"
+        if (pathname.startsWith("/dashboard/profile")) return "Profile"
         return "Dashboard"
     }
 

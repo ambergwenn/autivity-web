@@ -6,10 +6,12 @@ import { DashboardStatCards } from "@/components/dashboard/dashboard-stat-cards"
 import { AdaptiveEngineChart } from "@/components/dashboard/adaptive-engine-chart"
 import { DevelopmentalProgressChart } from "@/components/dashboard/developmental-progress-chart"
 import { ActivityPerformanceAlerts } from "@/components/dashboard/activity-performance-alerts"
+import { getCurrentUserProfile } from "@/lib/queries/admin"
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     const checkUser = async () => {
@@ -30,6 +32,16 @@ export default function DashboardPage() {
       }
 
       setUser(session.user)
+
+      try {
+        const profileData = await getCurrentUserProfile()
+        if (profileData) {
+          setProfile(profileData)
+        }
+      } catch (error) {
+        console.error("Error fetching admin profile:", error)
+      }
+
       setLoading(false)
     }
 
@@ -49,6 +61,10 @@ export default function DashboardPage() {
   }
 
   const getDisplayName = () => {
+    if (profile) {
+      const combinedName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+      if (combinedName) return combinedName
+    }
     const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Admin"
     return name.charAt(0).toUpperCase() + name.slice(1)
   }

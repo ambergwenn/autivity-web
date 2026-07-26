@@ -16,7 +16,6 @@ export default function ProfilePage() {
     const [firstName, setFirstName] = useState<string>("");
     const [lastName, setLastName] = useState<string>("");
     const [email, setEmail] = useState<string>("");
-    const [contactNumber, setContactNumber] = useState<string>("");
 
     const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -30,7 +29,6 @@ export default function ProfilePage() {
                 setFirstName(data.first_name || "");
                 setLastName(data.last_name || "");
                 setEmail(data.email || "");
-                setContactNumber(data.contact_number || "");
                 setLoading(false);
             } else if (isMounted) {
                 setLoading(false);
@@ -52,13 +50,12 @@ export default function ProfilePage() {
         const res = await updateCurrentUserProfile(profile.id, {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
-            contact_number: contactNumber.trim(),
         });
 
         if (res.success) {
             setStatusMsg({ type: "success", text: "Account profile updated successfully!" });
             setProfile((prev) =>
-                prev ? { ...prev, first_name: firstName.trim(), last_name: lastName.trim(), contact_number: contactNumber.trim() } : null
+                prev ? { ...prev, first_name: firstName.trim(), last_name: lastName.trim() } : null
             );
         } else {
             setStatusMsg({ type: "error", text: "Failed to update profile. Please try again." });
@@ -70,7 +67,6 @@ export default function ProfilePage() {
         if (profile) {
             setFirstName(profile.first_name || "");
             setLastName(profile.last_name || "");
-            setContactNumber(profile.contact_number || "");
             setStatusMsg(null);
         }
     };
@@ -91,7 +87,7 @@ export default function ProfilePage() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold md:text-3xl font-fredoka" style={{ color: "#4B5161" }}>
-                    Account
+                    Profile
                 </h1>
             </div>
 
@@ -100,11 +96,10 @@ export default function ProfilePage() {
                     <form onSubmit={handleSave} className="space-y-8">
                         {statusMsg && (
                             <div
-                                className={`p-4 text-xs font-bold rounded-2xl flex items-center gap-2 border ${
-                                    statusMsg.type === "success"
+                                className={`p-4 text-xs font-bold rounded-2xl flex items-center gap-2 border ${statusMsg.type === "success"
                                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                         : "bg-red-50 text-red-600 border-red-200"
-                                }`}
+                                    }`}
                             >
                                 {statusMsg.type === "success" ? (
                                     <Check className="size-4 shrink-0" />
@@ -156,17 +151,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Contact Number Input */}
-                        <div>
-                            <label className="text-xs font-bold text-slate-700 mb-2 block">Contact Number</label>
-                            <input
-                                type="text"
-                                value={contactNumber}
-                                onChange={(e) => setContactNumber(e.target.value)}
-                                placeholder="Enter contact number"
-                                className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-[#4B5161] shadow-2xs transition-colors focus:border-[#62A9E6] focus:outline-hidden"
-                            />
-                        </div>
+
 
                         {/* Email Input & Edit Email Button */}
                         <div>
@@ -198,7 +183,7 @@ export default function ProfilePage() {
                                     Password
                                 </h3>
                                 <p className="text-xs font-medium text-slate-400 mt-0.5">
-                                    Log in with your password instead of using temporary login codes
+                                    Change your password to keep your account secure
                                 </p>
                             </div>
                             <Button
@@ -223,7 +208,7 @@ export default function ProfilePage() {
                             <Button
                                 type="submit"
                                 disabled={saving}
-                                className="h-11 rounded-2xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-8 text-xs font-bold shadow-md cursor-pointer flex items-center gap-2"
+                                className="h-11 rounded-2xl bg-[#62A9E6] hover:bg-[#5299D6] text-white px-8 text-xs font-bold shadow-md cursor-pointer flex items-center gap-2"
                             >
                                 {saving && <Loader2 className="size-4 animate-spin" />}
                                 <span>Save</span>

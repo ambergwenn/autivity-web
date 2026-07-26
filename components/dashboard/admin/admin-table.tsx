@@ -67,7 +67,6 @@ const MOCK_FALLBACK_ADMINS: AdminItem[] = [
         verificationStatus: "verified",
         createdAt: "2026-01-15",
         lastActive: "Today",
-        contactNumber: "+63 917 123 4567",
         university: "De La Salle University",
         isSuspended: false,
     },
@@ -79,7 +78,6 @@ const MOCK_FALLBACK_ADMINS: AdminItem[] = [
         verificationStatus: "verified",
         createdAt: "2026-02-10",
         lastActive: "Yesterday",
-        contactNumber: "+63 918 987 6543",
         university: "Ateneo de Manila University",
         isSuspended: false,
     },
@@ -91,7 +89,6 @@ const MOCK_FALLBACK_ADMINS: AdminItem[] = [
         verificationStatus: "pending",
         createdAt: "2026-03-01",
         lastActive: "3 weeks ago",
-        contactNumber: "+63 920 555 1234",
         university: "University of the Philippines",
         isSuspended: false,
     },
@@ -510,11 +507,7 @@ export function AdminTable() {
                                 <p className="text-sm font-semibold text-slate-600">{selectedAdmin.email}</p>
                             </div>
 
-                            {/* Contact Number */}
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 mb-0.5 block uppercase tracking-wider">Contact Number</label>
-                                <p className="text-sm font-semibold text-slate-600">{selectedAdmin.contactNumber || "N/A"}</p>
-                            </div>
+
 
                             {/* Joined Date */}
                             <div>

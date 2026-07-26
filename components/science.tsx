@@ -52,7 +52,7 @@ export default function Science() {
   const activeColor = activeIndex !== null ? scienceCards[activeIndex].hoverColor : "#62A9E6";
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 text-slate-800 border-t border-[#E5E7EB]/50">
+    <section id="science" className="mx-auto max-w-7xl px-6 py-20 text-slate-800 border-t border-[#E5E7EB]/50 scroll-mt-16">
       {/* Heading Block with 3D Text Rotation on Hover */}
       <div className="mb-16 flex flex-col items-center justify-center text-center px-4 md:px-8 mx-auto">
         <h2 className="max-w-3xl text-3xl font-fredoka font-bold leading-tight text-[#535B74] md:text-4xl lg:text-5xl" style={{ perspective: "1000px" }}>

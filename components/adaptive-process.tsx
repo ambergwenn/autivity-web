@@ -34,7 +34,7 @@ const processSteps = [
 
 export default function AdaptiveProcess() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20 text-slate-800">
+    <section id="process" className="mx-auto max-w-7xl px-6 py-20 text-slate-800 scroll-mt-16">
       {/* Centered Heading with matching styling */}
       <div className="mb-16 flex flex-col items-center justify-center text-center px-4">
         <h2 className="font-fredoka text-3xl font-bold leading-tight md:text-4xl lg:text-5xl" style={{ color: "#535B74" }}>

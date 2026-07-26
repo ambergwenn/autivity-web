@@ -27,7 +27,7 @@ const faqItems = [
 
 export default function FAQ() {
   return (
-    <section className="w-full mx-auto max-w-4xl px-6 py-20 border-t border-[#E5E7EB]/50">
+    <section id="faq" className="w-full mx-auto max-w-4xl px-6 py-20 border-t border-[#E5E7EB]/50 scroll-mt-16">
       <div className="mb-16 flex flex-col items-center justify-center text-center px-4 md:px-8 mx-auto">
         <h2 className="max-w-2xl text-3xl font-fredoka font-bold leading-tight text-[#535B74] md:text-4xl lg:text-5xl">
           Frequently Asked Questions

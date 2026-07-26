@@ -1,7 +1,9 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 interface FooterLink {
   name: string;
@@ -19,14 +21,32 @@ const footerNavigation: FooterColumn[] = [
   {
     title: "Product",
     links: [
-      { name: "Features", href: "#" },
-      { name: "Clinical Architecture", href: "#" },
-      { name: "FAQ", href: "#" },
+      { name: "Features", href: "/#features" },
+      { name: "Clinical Architecture", href: "/#science" },
+      { name: "FAQ", href: "/#faq" },
     ],
   },
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   return (
     <footer
       className="w-full border-t border-slate-200 bg-no-repeat text-slate-600 dark:border-slate-800 dark:text-slate-400"
@@ -43,7 +63,11 @@ export default function Footer() {
 
           {/* Left: Logo + Description */}
           <div className="flex flex-col gap-5 lg:max-w-sm">
-            <Link href="/" className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-3"
+              onClick={handleLogoClick}
+            >
               <Image
                 src="/images/logo.svg"
                 alt="Autivity logo"
@@ -77,6 +101,11 @@ export default function Footer() {
                       <Link
                         href={link.href}
                         className="group inline-flex items-center text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                        onClick={(e) => {
+                          if (link.href.startsWith("/#")) {
+                            handleScroll(e, link.href.split("#")[1]);
+                          }
+                        }}
                       >
                         <span>{link.name}</span>
                         {link.badge && (

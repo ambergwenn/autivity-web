@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const BouncyCardsFeatures = () => {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 text-slate-800">
+    <section id="features" className="mx-auto max-w-7xl px-4 py-12 text-slate-800 scroll-mt-16">
       <div className="mb-8 flex flex-col items-center justify-center text-center md:px-8">
         <h1 className="font-fredoka text-3xl font-bold leading-tight text-slate-900 md:text-4xl lg:text-5xl" style={{ color: "#535B74" }}>
           Fun learning with

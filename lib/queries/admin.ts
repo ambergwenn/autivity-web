@@ -8,7 +8,6 @@ export interface AdminItem {
   verificationStatus: "verified" | "pending";
   createdAt: string;
   lastActive: string;
-  contactNumber?: string;
   university?: string;
   isSuspended?: boolean;
 }
@@ -59,7 +58,6 @@ export async function getAdminUsers(): Promise<AdminItem[]> {
         verificationStatus: isVerified ? "verified" : "pending",
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString() : "N/A",
         lastActive: p.last_active ? new Date(p.last_active).toLocaleDateString() : "Recently",
-        contactNumber: p.contact_number || p.phone || "N/A",
         university: p.university || "N/A",
         isSuspended,
       };
@@ -78,7 +76,6 @@ export async function updateAdminProfile(
   updates: {
     first_name?: string;
     last_name?: string;
-    contact_number?: string;
     university?: string;
   }
 ): Promise<{ success: boolean; error?: any }> {
@@ -146,7 +143,6 @@ export interface CurrentUserProfile {
   email: string;
   first_name: string;
   last_name: string;
-  contact_number?: string;
 }
 
 /**
@@ -159,7 +155,7 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("first_name, last_name, contact_number")
+      .select("*")
       .eq("id", session.user.id)
       .maybeSingle();
 
@@ -170,19 +166,34 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
     const meta = session.user.user_metadata || {};
     const email = session.user.email || "";
 
-    let firstName = profile?.first_name || meta.first_name || "";
-    let lastName = profile?.last_name || meta.last_name || "";
-    const contactNumber = profile?.contact_number || meta.contact_number || "";
+    let firstName = profile?.first_name || "";
+    let lastName = profile?.last_name || "";
 
+    // If first_name and last_name are empty in database profile, try full_name or name from database profile!
     if (!firstName && !lastName) {
-      const full = meta.full_name || meta.name || "";
-      if (full) {
-        const parts = full.trim().split(" ");
+      const dbFullName = profile?.full_name || profile?.name || "";
+      if (dbFullName) {
+        const parts = dbFullName.trim().split(" ");
         firstName = parts[0] || "";
         lastName = parts.slice(1).join(" ") || "";
-      } else {
-        firstName = email.split("@")[0] || "Admin";
-        lastName = "";
+      }
+    }
+
+    // Fallback to metadata
+    if (!firstName && !lastName) {
+      firstName = meta.first_name || "";
+      lastName = meta.last_name || "";
+      
+      if (!firstName && !lastName) {
+        const full = meta.full_name || meta.name || "";
+        if (full) {
+          const parts = full.trim().split(" ");
+          firstName = parts[0] || "";
+          lastName = parts.slice(1).join(" ") || "";
+        } else {
+          firstName = email.split("@")[0] || "Admin";
+          lastName = "";
+        }
       }
     }
 
@@ -191,7 +202,6 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
       email,
       first_name: firstName,
       last_name: lastName,
-      contact_number: contactNumber,
     };
   } catch (error) {
     console.error("Error in getCurrentUserProfile:", error);
@@ -204,7 +214,7 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
  */
 export async function updateCurrentUserProfile(
   userId: string,
-  updates: { first_name: string; last_name: string; contact_number?: string }
+  updates: { first_name: string; last_name: string }
 ): Promise<{ success: boolean; error?: any }> {
   try {
     const { error } = await supabase
