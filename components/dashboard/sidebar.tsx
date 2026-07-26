@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -33,6 +34,7 @@ import {
 
 import { NavUser } from "../nav-user"
 import { cn } from "@/lib/utils"
+import { getCurrentUserProfile } from "@/lib/queries/admin"
 
 const navItems = [
     {
@@ -53,7 +55,7 @@ const navItems = [
     {
         label: "System",
         items: [
-            { title: "Admins", href: "/dashboard/admins", icon: ShieldCheck },
+            { title: "Admins", href: "/dashboard/admin", icon: ShieldCheck },
         ],
     },
 ]
@@ -61,6 +63,55 @@ const navItems = [
 export function AppSidebar() {
     const pathname = usePathname()
     const [hoveredHref, setHoveredHref] = useState<string | null>(null)
+    const [user, setUser] = useState<{ name: string; email: string }>({ name: "Admin", email: "admin@autivity.com" })
+
+    useEffect(() => {
+        let isMounted = true
+        let channel: any = null
+
+        async function getUserData() {
+            const data = await getCurrentUserProfile()
+            if (isMounted && data) {
+                const combinedName = `${data.first_name || ""} ${data.last_name || ""}`.trim()
+                setUser({
+                    name: combinedName || "Admin",
+                    email: data.email || "admin@autivity.com"
+                })
+
+                // Subscribe to public.profiles updates for this user
+                channel = supabase
+                    .channel(`profile-sidebar-${data.id}`)
+                    .on(
+                        "postgres_changes",
+                        {
+                            event: "UPDATE",
+                            schema: "public",
+                            table: "profiles",
+                            filter: `id=eq.${data.id}`,
+                        },
+                        (payload: any) => {
+                            if (isMounted && payload.new) {
+                                const newFirstName = payload.new.first_name || ""
+                                const newLastName = payload.new.last_name || ""
+                                const newCombinedName = `${newFirstName} ${newLastName}`.trim()
+                                setUser((prev) => ({
+                                    ...prev,
+                                    name: newCombinedName || "Admin"
+                                }))
+                            }
+                        }
+                    )
+                    .subscribe()
+            }
+        }
+        getUserData()
+        return () => {
+            isMounted = false
+            if (channel) {
+                supabase.removeChannel(channel)
+            }
+        }
+    }, [])
 
     return (
         <Sidebar collapsible="icon">
@@ -165,8 +216,8 @@ export function AppSidebar() {
             {/* Footer — User */}
             <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                 <NavUser
-                    name="Admin"
-                    email="admin@autivity.com"
+                    name={user.name}
+                    email={user.email}
                 />
             </SidebarFooter>
         </Sidebar>

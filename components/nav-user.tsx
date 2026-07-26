@@ -1,4 +1,5 @@
-"use client"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 
 import {
     Avatar,
@@ -95,19 +96,21 @@ export function NavUser({
 
                         <DropdownMenuSeparator />
 
-                        <DropdownMenuItem className="gap-2 rounded-lg px-3 py-2 text-sm font-quicksand text-slate-700 cursor-pointer group/item transition-colors duration-150">
-                            <User className="size-4 text-slate-400 transition-transform duration-150 group-hover/item:translate-x-0.5" />
-                            <span className="transition-transform duration-150 inline-block group-hover/item:translate-x-1">Profile</span>
+                        <DropdownMenuItem className="p-0 rounded-lg cursor-pointer">
+                            <Link href="/dashboard/profile" className="flex items-center gap-2 w-full px-3 py-2 text-sm font-quicksand text-slate-700 group/item transition-colors duration-150">
+                                <User className="size-4 text-slate-400 transition-transform duration-150 group-hover/item:translate-x-0.5" />
+                                <span className="transition-transform duration-150 inline-block group-hover/item:translate-x-1">Profile</span>
+                            </Link>
                         </DropdownMenuItem>
-
-                        <DropdownMenuItem className="gap-2 rounded-lg px-3 py-2 text-sm font-quicksand text-slate-700 cursor-pointer group/item transition-colors duration-150">
-                            <Settings className="size-4 text-slate-400 transition-transform duration-150 group-hover/item:translate-x-0.5" />
-                            <span className="transition-transform duration-150 inline-block group-hover/item:translate-x-1">Settings</span>
-                        </DropdownMenuItem>
-
                         <DropdownMenuSeparator />
 
-                        <DropdownMenuItem className="gap-2 rounded-lg px-3 py-2 text-sm font-quicksand text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700 group/item transition-colors duration-150">
+                        <DropdownMenuItem
+                            onClick={async () => {
+                                await supabase.auth.signOut();
+                                window.location.href = "/login";
+                            }}
+                            className="gap-2 rounded-lg px-3 py-2 text-sm font-quicksand text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700 group/item transition-colors duration-150"
+                        >
                             <LogOut className="size-4 transition-transform duration-150 group-hover/item:translate-x-0.5" />
                             <span className="transition-transform duration-150 inline-block group-hover/item:translate-x-1">Log out</span>
                         </DropdownMenuItem>

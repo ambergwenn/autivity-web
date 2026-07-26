@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   GraduationCap,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { getDashboardUserKPIs, getDashboardActivityKPIs, getDashboardSessionKPIs, getDashboardMilestoneKPIs, type UserKPIStats, type SessionKPIStats, type MilestoneKPIStats } from "@/lib/queries/dashboard";
 
 export interface DashboardStatCardsProps {
@@ -38,6 +39,7 @@ export interface DashboardStatCardsProps {
 }
 
 export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
+  const router = useRouter();
   const [liveUsers, setLiveUsers] = useState<UserKPIStats | null>(null);
   const [liveActivitiesCount, setLiveActivitiesCount] = useState<number | null>(null);
   const [liveSessions, setLiveSessions] = useState<SessionKPIStats | null>(null);
@@ -89,6 +91,7 @@ export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
       title: "Users",
       mainMetric: totalUsers.toLocaleString(),
       icon: Users,
+      href: "/dashboard/user",
       bgColor: "bg-[#62A9E6]",
       borderColor: "border-[#62A9E6]",
       textColor: "text-[#62A9E6]",
@@ -118,6 +121,7 @@ export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
       title: "Activities",
       mainMetric: totalCurriculum.toLocaleString(),
       icon: BookOpen,
+      href: "/dashboard/activities",
       bgColor: "bg-[#E8B00C]",
       borderColor: "border-[#E8B00C]",
       textColor: "text-[#E8B00C]",
@@ -210,8 +214,13 @@ export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: index * 0.08 }}
-            whileHover={{ scale: 1.03, rotate: card.rotateHover }}
-            className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border-[3px] ${card.borderColor} ${card.upperBg || "bg-white"} shadow-sm transition-all duration-300 hover:shadow-xl ${card.shadowColor} cursor-pointer min-h-[240px]`}
+            whileHover={card.href ? { scale: 1.03, rotate: card.rotateHover } : undefined}
+            onClick={() => {
+              if (card.href) {
+                router.push(card.href);
+              }
+            }}
+            className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border-[3px] ${card.borderColor} ${card.upperBg || "bg-white"} shadow-sm transition-all duration-300 ${card.href ? `hover:shadow-xl ${card.shadowColor} cursor-pointer` : "cursor-default"} min-h-[240px]`}
           >
             {/* Top Section: Lighter background with Icon, Main Metric (with increased letter spacing), and Title */}
             <div className={`p-6 flex flex-col justify-between flex-1 ${card.upperBg || "bg-white"}`}>
