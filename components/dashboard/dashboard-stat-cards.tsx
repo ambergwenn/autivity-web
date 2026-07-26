@@ -214,13 +214,13 @@ export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: index * 0.08 }}
-            whileHover={card.href ? { scale: 1.03, rotate: card.rotateHover } : undefined}
+            whileHover={{ scale: 1.03, rotate: card.rotateHover }}
             onClick={() => {
               if (card.href) {
                 router.push(card.href);
               }
             }}
-            className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border-[3px] ${card.borderColor} ${card.upperBg || "bg-white"} shadow-sm transition-all duration-300 ${card.href ? `hover:shadow-xl ${card.shadowColor} cursor-pointer` : "cursor-default"} min-h-[240px]`}
+            className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border-[3px] ${card.borderColor} ${card.upperBg || "bg-white"} shadow-sm transition-colors duration-300 hover:shadow-xl ${card.shadowColor} ${card.href ? "cursor-pointer" : "cursor-default"} min-h-[240px]`}
           >
             {/* Top Section: Lighter background with Icon, Main Metric (with increased letter spacing), and Title */}
             <div className={`p-6 flex flex-col justify-between flex-1 ${card.upperBg || "bg-white"}`}>

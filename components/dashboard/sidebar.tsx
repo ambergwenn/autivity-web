@@ -28,7 +28,6 @@ import {
     BookOpen,
     Settings,
     ShieldCheck,
-    Bell,
     Puzzle,
 } from "lucide-react"
 
@@ -41,7 +40,6 @@ const navItems = [
         label: "Overview",
         items: [
             { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-            { title: "Notifications", href: "/dashboard/notifications", icon: Bell },
         ],
     },
     {

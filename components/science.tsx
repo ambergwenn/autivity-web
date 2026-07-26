@@ -89,7 +89,7 @@ export default function Science() {
             onMouseEnter={() => setActiveIndex(index)}
             whileHover={{ scale: 0.95, rotate: "-1deg" }}
             className={cn(
-              "group relative min-h-[220px] cursor-pointer overflow-hidden rounded-2xl bg-transparent p-8 border-[3px] border-solid transition-all duration-300 flex flex-col justify-center",
+              "group relative min-h-[220px] cursor-pointer overflow-hidden rounded-2xl bg-transparent p-8 border-[3px] border-solid transition-colors duration-300 flex flex-col justify-center",
               card.borderColor,
               card.colSpan
             )}
