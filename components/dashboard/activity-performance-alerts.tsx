@@ -40,6 +40,13 @@ const categoryStyles: Record<string, string> = {
   "Social & Turn-Taking": "bg-[#C084FC]/20 border border-[#C084FC]/40 text-[#8A35E5]",
 };
 
+const difficultyBadgeStyles: Record<string, string> = {
+  Easy: "bg-emerald-100/70 border border-emerald-300/60 text-emerald-700",
+  Medium: "bg-amber-100/70 border border-amber-300/60 text-amber-700",
+  Hard: "bg-rose-100/70 border border-rose-300/60 text-rose-700",
+  Custom: "bg-slate-100 border border-slate-200 text-slate-700",
+};
+
 export function ActivityPerformanceAlerts() {
   const [data, setData] = React.useState<ActivityPerformanceAlertItem[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -290,8 +297,10 @@ export function ActivityPerformanceAlerts() {
                         {item.category}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs font-semibold text-slate-500">
-                      {item.difficulty}
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-xl px-2.5 py-1 text-xs font-bold ${difficultyBadgeStyles[item.difficulty] || "bg-slate-100 border border-slate-200 text-slate-700"}`}>
+                        {item.difficulty}
+                      </span>
                     </TableCell>
                     <TableCell className="font-mono font-bold text-slate-700">
                       {item.totalSessions.toLocaleString()}

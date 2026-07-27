@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getDifficultyLabel } from "@/lib/queries/activities";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -377,11 +378,9 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
 
     activities.forEach((act) => {
       if (act.path) {
-        let diffLabel = "N/A";
-        if (act.difficulty_level !== undefined && act.difficulty_level !== null) {
-          const str = String(act.difficulty_level);
-          diffLabel = str.toLowerCase().startsWith("level") ? str : `Level ${str}`;
-        }
+        const level = typeof act.difficulty_level === "number" ? act.difficulty_level : parseInt(String(act.difficulty_level || "0"), 10);
+        const diffLabel = getDifficultyLabel(level);
+
         activityMap.set(act.path.trim(), {
           id: String(act.id),
           title: act.title || "Untitled Activity",
