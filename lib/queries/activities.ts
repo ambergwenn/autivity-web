@@ -170,55 +170,118 @@ export async function getActivityCategoryBreakdown(): Promise<Record<string, num
  * Fetches the assignment count per category based on student assigned_activities paths.
  * All existing categories from activities table are included (even if 0 assignments).
  */
+// Helper function to extract activity paths or titles from array/string/JSON
+function parseActivityItems(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string" && val.trim()) {
+    const trimmed = val.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // Fallback to raw string if JSON parse fails
+      }
+    }
+    if (trimmed.includes(",")) {
+      return trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  return [];
+}
+
+/**
+ * Fetches the assignment count per category based on student assigned_activities and student_sessions.
+ * All existing categories from activities table are included (even if 0 assignments).
+ */
 export async function getMostAssignedCategories(): Promise<MostAssignedCategoryItem[]> {
   try {
-    const [activitiesRes, studentsRes] = await Promise.all([
-      supabase.from("activities").select("category, path"),
+    const [activitiesRes, studentsRes, sessionsRes] = await Promise.all([
+      supabase.from("activities").select("category, path, title, sub_category"),
       supabase.from("students").select("assigned_activities"),
+      supabase.from("student_sessions").select("activity_path"),
     ]);
 
     if (activitiesRes.error) console.error("Error fetching activities for most assigned query:", activitiesRes.error);
     if (studentsRes.error) console.error("Error fetching students assigned_activities:", studentsRes.error);
+    if (sessionsRes.error) console.error("Error fetching student_sessions:", sessionsRes.error);
 
     const activitiesData = activitiesRes.data || [];
     const studentsData = studentsRes.data || [];
+    const sessionsData = sessionsRes.data || [];
 
-    // 1. Collect all unique categories & map path -> category
     const categoryCounts: Record<string, number> = {};
     const pathToCategoryMap: Record<string, string> = {};
 
+    // Collect ONLY categories that actually exist in the database's activities table
     for (const act of activitiesData) {
       if (act.category) {
-        if (categoryCounts[act.category] === undefined) {
-          categoryCounts[act.category] = 0;
+        const cat = act.category.trim();
+        if (categoryCounts[cat] === undefined) {
+          categoryCounts[cat] = 0;
         }
         if (act.path) {
           const raw = String(act.path).trim();
-          const clean = raw.toLowerCase();
-          pathToCategoryMap[raw] = act.category;
-          pathToCategoryMap[clean] = act.category;
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
+        }
+        if (act.title) {
+          const raw = String(act.title).trim();
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
+        }
+        if (act.sub_category) {
+          const raw = String(act.sub_category).trim();
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
         }
       }
     }
 
-    // 2. Count assignments per category from students table assigned_activities array
+    const matchCategory = (itemStr: string): string | null => {
+      if (!itemStr) return null;
+      const raw = itemStr.trim();
+      const clean = raw.toLowerCase();
+
+      if (pathToCategoryMap[raw]) return pathToCategoryMap[raw];
+      if (pathToCategoryMap[clean]) return pathToCategoryMap[clean];
+
+      for (const cat of Object.keys(categoryCounts)) {
+        if (cat.toLowerCase() === clean) return cat;
+      }
+
+      for (const cat of Object.keys(categoryCounts)) {
+        const catLower = cat.toLowerCase();
+        if (clean.includes(catLower) || catLower.includes(clean)) return cat;
+      }
+
+      return null;
+    };
+
+    // 1. Count from students assigned_activities
     for (const student of studentsData) {
-      const assigned = student.assigned_activities;
-      if (Array.isArray(assigned)) {
-        for (const itemPath of assigned) {
-          if (typeof itemPath === "string" && itemPath.trim()) {
-            const raw = itemPath.trim();
-            const clean = raw.toLowerCase();
-            const matchedCategory = pathToCategoryMap[raw] || pathToCategoryMap[clean];
-            if (matchedCategory) {
-              categoryCounts[matchedCategory] = (categoryCounts[matchedCategory] || 0) + 1;
-            }
-          }
+      const items = parseActivityItems(student.assigned_activities);
+      for (const item of items) {
+        const matched = matchCategory(item);
+        if (matched) {
+          categoryCounts[matched] = (categoryCounts[matched] || 0) + 1;
         }
       }
     }
 
-    // 3. Convert to array & sort descending by assignments count
+    // 2. Count from student_sessions activity_path
+    for (const session of sessionsData) {
+      const items = parseActivityItems(session.activity_path);
+      for (const item of items) {
+        const matched = matchCategory(item);
+        if (matched) {
+          categoryCounts[matched] = (categoryCounts[matched] || 0) + 1;
+        }
+      }
+    }
+
+    // Convert to array & sort descending by assignments count
     const items = Object.entries(categoryCounts).map(([category, assignments]) => ({
       category,
       assignments,
@@ -226,7 +289,6 @@ export async function getMostAssignedCategories(): Promise<MostAssignedCategoryI
 
     items.sort((a, b) => b.assignments - a.assignments);
 
-    // Assign consistent category colors based on category name
     return items.map((item, index) => ({
       ...item,
       fill: getCategoryColor(item.category, index),
@@ -253,15 +315,16 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
       .from("activities")
       .select("*", { count: "exact", head: true });
 
-    const [activitiesRes, studentsRes] = await Promise.all([
-      supabase.from("activities").select("category, path, created_at"),
+    const [activitiesRes, studentsRes, sessionsRes] = await Promise.all([
+      supabase.from("activities").select("category, path, title, sub_category, created_at"),
       supabase.from("students").select("id, assigned_activities"),
+      supabase.from("student_sessions").select("student_id, activity_path"),
     ]);
 
     const activitiesList = activitiesRes.data || [];
     const studentsList = studentsRes.data || [];
+    const sessionsList = sessionsRes.data || [];
 
-    // Calculate activities added/created this month
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -271,43 +334,75 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
       return !isNaN(createdDate.getTime()) && createdDate >= firstDayOfMonth;
     }).length;
 
+    const categoryAssignmentsCount: Record<string, number> = {};
+    const categoryStudentsSet: Record<string, Set<string>> = {};
     const pathToCategoryMap: Record<string, string> = {};
-    const categoriesSet = new Set<string>();
 
     for (const act of activitiesList) {
       if (act.category) {
-        categoriesSet.add(act.category);
+        const cat = act.category.trim();
+        categoryAssignmentsCount[cat] = categoryAssignmentsCount[cat] || 0;
+        if (!categoryStudentsSet[cat]) categoryStudentsSet[cat] = new Set<string>();
+
         if (act.path) {
           const raw = String(act.path).trim();
-          const clean = raw.toLowerCase();
-          pathToCategoryMap[raw] = act.category;
-          pathToCategoryMap[clean] = act.category;
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
+        }
+        if (act.title) {
+          const raw = String(act.title).trim();
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
+        }
+        if (act.sub_category) {
+          const raw = String(act.sub_category).trim();
+          pathToCategoryMap[raw] = cat;
+          pathToCategoryMap[raw.toLowerCase()] = cat;
         }
       }
     }
 
-    const categoryAssignmentsCount: Record<string, number> = {};
-    const categoryStudentsSet: Record<string, Set<string>> = {};
+    const matchCategory = (itemStr: string): string | null => {
+      if (!itemStr) return null;
+      const raw = itemStr.trim();
+      const clean = raw.toLowerCase();
 
-    categoriesSet.forEach((cat) => {
-      categoryAssignmentsCount[cat] = 0;
-      categoryStudentsSet[cat] = new Set<string>();
-    });
+      if (pathToCategoryMap[raw]) return pathToCategoryMap[raw];
+      if (pathToCategoryMap[clean]) return pathToCategoryMap[clean];
+
+      for (const cat of Object.keys(categoryAssignmentsCount)) {
+        if (cat.toLowerCase() === clean) return cat;
+      }
+
+      for (const cat of Object.keys(categoryAssignmentsCount)) {
+        const catLower = cat.toLowerCase();
+        if (clean.includes(catLower) || catLower.includes(clean)) return cat;
+      }
+
+      return null;
+    };
 
     for (const student of studentsList) {
-      const assigned = student.assigned_activities;
-      if (Array.isArray(assigned)) {
-        for (const itemPath of assigned) {
-          if (typeof itemPath === "string" && itemPath.trim()) {
-            const raw = itemPath.trim();
-            const clean = raw.toLowerCase();
-            const matchedCategory = pathToCategoryMap[raw] || pathToCategoryMap[clean];
-            if (matchedCategory) {
-              categoryAssignmentsCount[matchedCategory] = (categoryAssignmentsCount[matchedCategory] || 0) + 1;
-              if (student.id) {
-                categoryStudentsSet[matchedCategory].add(String(student.id));
-              }
-            }
+      const items = parseActivityItems(student.assigned_activities);
+      for (const item of items) {
+        const matched = matchCategory(item);
+        if (matched) {
+          categoryAssignmentsCount[matched] = (categoryAssignmentsCount[matched] || 0) + 1;
+          if (student.id) {
+            categoryStudentsSet[matched]?.add(String(student.id));
+          }
+        }
+      }
+    }
+
+    for (const session of sessionsList) {
+      const items = parseActivityItems(session.activity_path);
+      for (const item of items) {
+        const matched = matchCategory(item);
+        if (matched) {
+          categoryAssignmentsCount[matched] = (categoryAssignmentsCount[matched] || 0) + 1;
+          if (session.student_id) {
+            categoryStudentsSet[matched]?.add(String(session.student_id));
           }
         }
       }
@@ -316,8 +411,7 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
     let topCategory = "";
     let maxAssignments = 0;
 
-    for (const cat of Array.from(categoriesSet)) {
-      const count = categoryAssignmentsCount[cat] || 0;
+    for (const [cat, count] of Object.entries(categoryAssignmentsCount)) {
       if (count > maxAssignments) {
         maxAssignments = count;
         topCategory = cat;

@@ -35,14 +35,6 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-const MOCK_FALLBACK: MostAssignedCategoryItem[] = [
-    { category: "Sensory Play", assignments: 145, fill: "#E8B00C" },
-    { category: "Bubble-Pop", assignments: 120, fill: "#ED529B" },
-    { category: "Drag-Drop", assignments: 95, fill: "#62A9E6" },
-    { category: "Matching", assignments: 42, fill: "#AD99E6" },
-    { category: "Patterning", assignments: 28, fill: "#AEE295" },
-];
-
 export function ActivityMostAssigned({ initialData }: ActivityMostAssignedProps) {
     const [data, setData] = React.useState<MostAssignedCategoryItem[]>(initialData || []);
     const [loading, setLoading] = React.useState<boolean>(!initialData || initialData.length === 0);
@@ -53,11 +45,7 @@ export function ActivityMostAssigned({ initialData }: ActivityMostAssignedProps)
             setLoading(true);
             const dbItems = await getMostAssignedCategories();
             if (isMounted) {
-                if (dbItems && dbItems.length > 0) {
-                    setData(dbItems);
-                } else {
-                    setData(MOCK_FALLBACK);
-                }
+                setData(dbItems || []);
                 setLoading(false);
             }
         }
