@@ -20,6 +20,7 @@ export interface UserItem {
   contactNumber?: string;
   university?: string;
   prcNumber?: string;
+  idImageUrl?: string | null;
   isSuspended?: boolean;
   suspendedUntil?: string | null;
 }
@@ -68,6 +69,40 @@ export async function getUserKPIs(): Promise<UserKPIStats> {
   }
 }
 
+export async function getTeacherIdUrl(rawUrl: string): Promise<string | null> {
+  if (!rawUrl || typeof rawUrl !== "string") return null;
+  const cleaned = rawUrl.trim();
+  if (!cleaned) return null;
+
+  let path = cleaned;
+  if (cleaned.includes("/teacher-ids/")) {
+    path = cleaned.split("/teacher-ids/")[1];
+  } else if (cleaned.startsWith("teacher-ids/")) {
+    path = cleaned.replace(/^teacher-ids\//, "");
+  }
+
+  path = decodeURIComponent(path.split("?")[0]);
+
+  try {
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("teacher-ids")
+      .createSignedUrl(path, 3600);
+
+    if (!signedError && signedData?.signedUrl) {
+      return signedData.signedUrl;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("teacher-ids")
+      .getPublicUrl(path);
+
+    return publicUrlData?.publicUrl || cleaned;
+  } catch (err) {
+    console.error("Error generating teacher ID URL:", err);
+    return cleaned;
+  }
+}
+
 /**
  * Fetches user directory items for the Main Users Data Table from profiles, students, and student_sessions.
  */
@@ -105,53 +140,59 @@ export async function getUsers(): Promise<UserItem[]> {
     const now = new Date();
 
     // Process profiles (teachers, parents, admins)
-    const profilesList: UserItem[] = (profilesRes.data || []).map((p: any) => {
-      const lastSignInVal = p.last_sign_in_at || p.last_sign_in || p.updated_at;
-      const lastSignIn = lastSignInVal ? new Date(lastSignInVal) : null;
+    const profilesList: UserItem[] = await Promise.all(
+      (profilesRes.data || []).map(async (p: any) => {
+        const lastSignInVal = p.last_sign_in_at || p.last_sign_in || p.updated_at;
+        const lastSignIn = lastSignInVal ? new Date(lastSignInVal) : null;
 
-      // Verification status from boolean column `is_verified`
-      const isVerified = typeof p.is_verified === "boolean" ? p.is_verified : p.status !== "pending";
-      const verificationStatus: UserItem["verificationStatus"] = isVerified ? "verified" : "pending";
-      
-      const suspendedUntilDate = p.suspended_until ? new Date(p.suspended_until) : null;
-      const isCurrentlySuspended = p.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || p.status === "suspended";
-      
-      const status: UserItem["status"] = isCurrentlySuspended
-        ? "suspended"
-        : (lastSignIn && lastSignIn >= thirtyDaysAgo)
-        ? "active"
-        : "inactive";
+        // Verification status from boolean column `is_verified`
+        const isVerified = typeof p.is_verified === "boolean" ? p.is_verified : p.status !== "pending";
+        const verificationStatus: UserItem["verificationStatus"] = isVerified ? "verified" : "pending";
+        
+        const suspendedUntilDate = p.suspended_until ? new Date(p.suspended_until) : null;
+        const isCurrentlySuspended = p.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || p.status === "suspended";
+        
+        const status: UserItem["status"] = isCurrentlySuspended
+          ? "suspended"
+          : (lastSignIn && lastSignIn >= thirtyDaysAgo)
+          ? "active"
+          : "inactive";
 
-      const roleStr = (p.role || "teacher").toLowerCase();
-      const role: UserItem["role"] =
-        roleStr === "admin"
-          ? "admin"
-          : roleStr === "parent"
-          ? "parent"
-          : "teacher";
+        const roleStr = (p.role || "teacher").toLowerCase();
+        const role: UserItem["role"] =
+          roleStr === "admin"
+            ? "admin"
+            : roleStr === "parent"
+            ? "parent"
+            : "teacher";
 
-      const createdDateVal = p.created_at || p.created_at_timestamp || p.registered_at || p.updated_at;
-      
-      // Combine first_name and last_name columns from profiles table
-      const combinedName = `${p.first_name || ""} ${p.last_name || ""}`.trim();
-      const profileName = combinedName || p.full_name || p.name || p.username || (p.email ? p.email.split("@")[0] : "Unnamed User");
+        const createdDateVal = p.created_at || p.created_at_timestamp || p.registered_at || p.updated_at;
+        
+        // Combine first_name and last_name columns from profiles table
+        const combinedName = `${p.first_name || ""} ${p.last_name || ""}`.trim();
+        const profileName = combinedName || p.full_name || p.name || p.username || (p.email ? p.email.split("@")[0] : "Unnamed User");
 
-      return {
-        id: p.id,
-        name: profileName,
-        email: p.email || "N/A",
-        role,
-        status,
-        verificationStatus,
-        createdAt: createdDateVal ? new Date(createdDateVal).toLocaleDateString() : "N/A",
-        lastActive: lastSignIn ? lastSignIn.toLocaleDateString() : "Never logged in",
-        contactNumber: p.contact_number || p.phone_number || p.phone || "N/A",
-        university: p.university || p.school || "N/A",
-        prcNumber: p.prc_number || p.prc_id || "N/A",
-        isSuspended: isCurrentlySuspended,
-        suspendedUntil: p.suspended_until || null,
-      };
-    });
+        const rawIdImg = p.id_image_url || p.id_image;
+        const idImageUrl = rawIdImg ? await getTeacherIdUrl(rawIdImg) : null;
+
+        return {
+          id: p.id,
+          name: profileName,
+          email: p.email || "N/A",
+          role,
+          status,
+          verificationStatus,
+          createdAt: createdDateVal ? new Date(createdDateVal).toLocaleDateString() : "N/A",
+          lastActive: lastSignIn ? lastSignIn.toLocaleDateString() : "Never logged in",
+          contactNumber: p.contact_number || p.phone_number || p.phone || "N/A",
+          university: p.university || p.school || "N/A",
+          prcNumber: p.prc_number || p.prc_id || "N/A",
+          idImageUrl,
+          isSuspended: isCurrentlySuspended,
+          suspendedUntil: p.suspended_until || null,
+        };
+      })
+    );
 
     // Process students
     const studentsList: UserItem[] = (studentsRes.data || []).map((s: any) => {
@@ -188,6 +229,7 @@ export async function getUsers(): Promise<UserItem[]> {
         contactNumber: s.contact_number || s.guardian_phone || "N/A",
         university: "N/A",
         prcNumber: "N/A",
+        idImageUrl: null,
         isSuspended: isCurrentlySuspended,
         suspendedUntil: s.suspended_until || null,
       };

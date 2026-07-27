@@ -16,6 +16,9 @@ import {
     AlertCircle,
     Check,
     Copy,
+    FileImage,
+    ExternalLink,
+    Maximize2,
 } from "lucide-react";
 
 import {
@@ -98,6 +101,7 @@ export function UserTable() {
     const [confirmUnsuspendOpen, setConfirmUnsuspendOpen] = React.useState<boolean>(false);
 
     const [copiedPrc, setCopiedPrc] = React.useState<boolean>(false);
+    const [previewImageUrl, setPreviewImageUrl] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         let isMounted = true;
@@ -753,33 +757,78 @@ export function UserTable() {
 
                                     {/* Role-Specific Details: Teacher */}
                                     {selectedUser.role === "teacher" && (
-                                        <div className="pt-2 border-t border-slate-200/60 mt-2">
-                                            <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px] mb-1">
-                                                PRC ID Number
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono font-bold text-slate-800 text-sm bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
-                                                    {selectedUser.prcNumber || "N/A"}
+                                        <div className="pt-3 border-t border-slate-200/60 mt-2 space-y-3">
+                                            <div>
+                                                <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px] mb-1">
+                                                    PRC ID Number
                                                 </span>
-                                                {selectedUser.prcNumber && selectedUser.prcNumber !== "N/A" && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleCopyPrc(selectedUser.prcNumber!)}
-                                                        className="h-8 px-2.5 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 cursor-pointer"
-                                                    >
-                                                        {copiedPrc ? (
-                                                            <>
-                                                                <Check className="size-3.5 text-emerald-600 mr-1" />
-                                                                <span className="text-emerald-600">Copied!</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy className="size-3.5 text-slate-500 mr-1" />
-                                                                <span>Copy</span>
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono font-bold text-slate-800 text-sm bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                                                        {selectedUser.prcNumber || "N/A"}
+                                                    </span>
+                                                    {selectedUser.prcNumber && selectedUser.prcNumber !== "N/A" && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleCopyPrc(selectedUser.prcNumber!)}
+                                                            className="h-8 px-2.5 text-xs font-bold rounded-xl border-slate-200 hover:bg-slate-100 cursor-pointer"
+                                                        >
+                                                            {copiedPrc ? (
+                                                                <>
+                                                                    <Check className="size-3.5 text-emerald-600 mr-1" />
+                                                                    <span className="text-emerald-600">Copied!</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className="size-3.5 text-slate-500 mr-1" />
+                                                                    <span>Copy</span>
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px] mb-1.5">
+                                                    Uploaded ID Document
+                                                </span>
+                                                {selectedUser.idImageUrl ? (
+                                                    <div className="relative group rounded-2xl border border-slate-200 bg-white p-2 overflow-hidden shadow-2xs transition-all hover:border-slate-300">
+                                                        <div className="relative w-full h-44 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                                                            <img
+                                                                src={selectedUser.idImageUrl}
+                                                                alt={`${selectedUser.name}'s ID`}
+                                                                className="w-full h-full object-contain cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                                                                onClick={() => setPreviewImageUrl(selectedUser.idImageUrl!)}
+                                                            />
+                                                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    onClick={() => setPreviewImageUrl(selectedUser.idImageUrl!)}
+                                                                    className="h-8 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer border-0"
+                                                                >
+                                                                    <Maximize2 className="size-3.5" />
+                                                                    <span>Expand</span>
+                                                                </Button>
+                                                                <a
+                                                                    href={selectedUser.idImageUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs shadow-sm cursor-pointer"
+                                                                >
+                                                                    <ExternalLink className="size-3.5" />
+                                                                    <span>Open</span>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-slate-200 bg-white text-slate-500 text-xs font-semibold">
+                                                        <FileImage className="size-4 text-slate-400 shrink-0" />
+                                                        <span>No ID image uploaded</span>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -1033,6 +1082,46 @@ export function UserTable() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* ID Image Preview Lightbox Dialog */}
+            <Dialog open={!!previewImageUrl} onOpenChange={(open) => !open && setPreviewImageUrl(null)}>
+                <DialogContent className="sm:max-w-[700px] rounded-3xl p-6 bg-white border border-slate-200 shadow-2xl">
+                    <DialogHeader className="pb-3 border-b border-slate-100">
+                        <div className="flex items-center justify-between pr-6">
+                            <div>
+                                <DialogTitle className="text-lg font-bold font-fredoka text-slate-800">
+                                    Teacher ID Document
+                                </DialogTitle>
+                                {selectedUser && (
+                                    <DialogDescription className="text-xs font-semibold text-slate-500 font-mono mt-0.5">
+                                        {selectedUser.name} ({selectedUser.email})
+                                    </DialogDescription>
+                                )}
+                            </div>
+                            {previewImageUrl && (
+                                <a
+                                    href={previewImageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors shrink-0"
+                                >
+                                    <ExternalLink className="size-3.5" />
+                                    <span>Open Original</span>
+                                </a>
+                            )}
+                        </div>
+                    </DialogHeader>
+                    <div className="py-2 flex items-center justify-center max-h-[70vh] overflow-auto">
+                        {previewImageUrl && (
+                            <img
+                                src={previewImageUrl}
+                                alt="Teacher ID preview"
+                                className="max-w-full max-h-[60vh] object-contain rounded-2xl border border-slate-100 shadow-sm"
+                            />
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
