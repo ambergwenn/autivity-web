@@ -21,6 +21,7 @@ export interface UserItem {
   university?: string;
   prcNumber?: string;
   isSuspended?: boolean;
+  suspendedUntil?: string | null;
 }
 
 /**
@@ -101,6 +102,8 @@ export async function getUsers(): Promise<UserItem[]> {
       }
     }
 
+    const now = new Date();
+
     // Process profiles (teachers, parents, admins)
     const profilesList: UserItem[] = (profilesRes.data || []).map((p: any) => {
       const lastSignInVal = p.last_sign_in_at || p.last_sign_in || p.updated_at;
@@ -110,8 +113,10 @@ export async function getUsers(): Promise<UserItem[]> {
       const isVerified = typeof p.is_verified === "boolean" ? p.is_verified : p.status !== "pending";
       const verificationStatus: UserItem["verificationStatus"] = isVerified ? "verified" : "pending";
       
-      const isSuspended = p.is_suspended === true || p.status === "suspended";
-      const status: UserItem["status"] = isSuspended
+      const suspendedUntilDate = p.suspended_until ? new Date(p.suspended_until) : null;
+      const isCurrentlySuspended = p.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || p.status === "suspended";
+      
+      const status: UserItem["status"] = isCurrentlySuspended
         ? "suspended"
         : (lastSignIn && lastSignIn >= thirtyDaysAgo)
         ? "active"
@@ -143,7 +148,8 @@ export async function getUsers(): Promise<UserItem[]> {
         contactNumber: p.contact_number || p.phone_number || p.phone || "N/A",
         university: p.university || p.school || "N/A",
         prcNumber: p.prc_number || p.prc_id || "N/A",
-        isSuspended,
+        isSuspended: isCurrentlySuspended,
+        suspendedUntil: p.suspended_until || null,
       };
     });
 
@@ -153,8 +159,9 @@ export async function getUsers(): Promise<UserItem[]> {
       const latestSessionAt = rawSessionDate ? new Date(rawSessionDate) : null;
 
       const verificationStatus: UserItem["verificationStatus"] = "verified";
-      const isSuspended = s.is_suspended === true || s.status === "suspended";
-      const status: UserItem["status"] = isSuspended
+      const suspendedUntilDate = s.suspended_until ? new Date(s.suspended_until) : null;
+      const isCurrentlySuspended = s.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || s.status === "suspended";
+      const status: UserItem["status"] = isCurrentlySuspended
         ? "suspended"
         : (latestSessionAt && latestSessionAt >= thirtyDaysAgo)
         ? "active"
@@ -181,7 +188,8 @@ export async function getUsers(): Promise<UserItem[]> {
         contactNumber: s.contact_number || s.guardian_phone || "N/A",
         university: "N/A",
         prcNumber: "N/A",
-        isSuspended,
+        isSuspended: isCurrentlySuspended,
+        suspendedUntil: s.suspended_until || null,
       };
     });
 
@@ -258,23 +266,39 @@ export async function verifyUser(
 
 /**
  * Toggles suspension of a user profile in 'profiles' table and Supabase Auth if service role is present.
+ * @param days Number of days user is suspended for. If 0 or null, indefinite. If suspend=false, clears suspension.
  */
 export async function toggleSuspendUser(
   userId: string,
   suspend: boolean,
-  duration: string = "87600h"
+  days: number = 0
 ): Promise<{ success: boolean; error?: any; message?: string }> {
   try {
     if (!userId) {
       throw new Error("Invalid user ID");
     }
 
-    // 1. Update the is_suspended flag and status in the profiles table
+    let suspendedUntil: string | null = null;
+    let authBanDuration = "none";
+
+    if (suspend) {
+      if (days > 0) {
+        const until = new Date();
+        until.setDate(until.getDate() + days);
+        suspendedUntil = until.toISOString();
+        authBanDuration = `${days * 24}h`;
+      } else {
+        // Indefinite ban (10 years)
+        authBanDuration = "87600h";
+      }
+    }
+
+    // 1. Update is_suspended and suspended_until in the profiles table
     const { error: dbError } = await supabase
       .from("profiles")
       .update({
         is_suspended: suspend,
-        status: suspend ? "suspended" : "active",
+        suspended_until: suspendedUntil,
       })
       .eq("id", userId);
 
@@ -293,10 +317,9 @@ export async function toggleSuspendUser(
           serviceKey
         );
 
-        const banDuration = suspend ? duration : "none";
         const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
           userId,
-          { ban_duration: banDuration }
+          { ban_duration: authBanDuration }
         );
 
         if (authError) {
@@ -309,7 +332,11 @@ export async function toggleSuspendUser(
 
     return {
       success: true,
-      message: suspend ? `User suspended for ${duration}` : "User reactivated",
+      message: suspend
+        ? days > 0
+          ? `User suspended for ${days} day(s)`
+          : "User suspended indefinitely"
+        : "User reactivated",
     };
   } catch (error) {
     console.error("Error in toggleSuspendUser:", error);

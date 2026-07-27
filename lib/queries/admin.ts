@@ -10,6 +10,7 @@ export interface AdminItem {
   lastActive: string;
   university?: string;
   isSuspended?: boolean;
+  suspendedUntil?: string | null;
 }
 
 /**
@@ -18,6 +19,7 @@ export interface AdminItem {
 export async function getAdminUsers(): Promise<AdminItem[]> {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const now = new Date();
 
     const { data: profiles, error } = await supabase
       .from("profiles")
@@ -38,7 +40,8 @@ export async function getAdminUsers(): Promise<AdminItem[]> {
       const combinedName = `${p.first_name || ""} ${p.last_name || ""}`.trim();
       const displayName = combinedName || p.full_name || p.name || p.email || "Unnamed Admin";
       const isVerified = p.is_verified === true || p.status === "verified";
-      const isSuspended = p.is_suspended === true || p.status === "suspended";
+      const suspendedUntilDate = p.suspended_until ? new Date(p.suspended_until) : null;
+      const isSuspended = p.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || p.status === "suspended";
 
       let statusVal: "active" | "inactive" | "suspended" = "active";
       if (isSuspended) {
@@ -60,6 +63,7 @@ export async function getAdminUsers(): Promise<AdminItem[]> {
         lastActive: p.last_active ? new Date(p.last_active).toLocaleDateString() : "Recently",
         university: p.university || "N/A",
         isSuspended,
+        suspendedUntil: p.suspended_until || null,
       };
     });
   } catch (error) {
@@ -95,17 +99,26 @@ export async function updateAdminProfile(
 
 /**
  * Toggles or sets the suspended state for an admin in the `profiles` table.
+ * @param days Number of days admin is suspended for. If 0, indefinite. If suspend=false, clears suspension.
  */
 export async function toggleSuspendAdmin(
   adminId: string,
-  suspend: boolean
+  suspend: boolean,
+  days: number = 0
 ): Promise<{ success: boolean; error?: any }> {
   try {
+    let suspendedUntil: string | null = null;
+    if (suspend && days > 0) {
+      const until = new Date();
+      until.setDate(until.getDate() + days);
+      suspendedUntil = until.toISOString();
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({
         is_suspended: suspend,
-        status: suspend ? "suspended" : "active",
+        suspended_until: suspendedUntil,
       })
       .eq("id", adminId);
 

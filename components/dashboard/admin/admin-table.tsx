@@ -108,6 +108,7 @@ export function AdminTable() {
     // Suspend confirmation state
     const [pendingSuspendAdmin, setPendingSuspendAdmin] = React.useState<AdminItem | null>(null);
     const [confirmSuspendOpen, setConfirmSuspendOpen] = React.useState<boolean>(false);
+    const [suspendDays, setSuspendDays] = React.useState<number>(7);
     const [suspending, setSuspending] = React.useState<boolean>(false);
 
     // Unsuspend confirmation state
@@ -144,6 +145,7 @@ export function AdminTable() {
     // Suspend trigger & handler
     const requestSuspendAdmin = (item: AdminItem) => {
         setPendingSuspendAdmin(item);
+        setSuspendDays(7);
         setConfirmSuspendOpen(true);
     };
 
@@ -151,7 +153,7 @@ export function AdminTable() {
         if (!pendingSuspendAdmin) return;
         setSuspending(true);
 
-        const res = await toggleSuspendAdmin(pendingSuspendAdmin.id, true);
+        const res = await toggleSuspendAdmin(pendingSuspendAdmin.id, true, suspendDays);
         if (res.success) {
             setAdmins((prev) =>
                 prev.map((a) =>
@@ -406,12 +408,22 @@ export function AdminTable() {
 
                                             {/* Status */}
                                             <TableCell>
-                                                <span className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-bold ${statusStyle}`}>
-                                                    {item.status === "active" && <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />}
-                                                    {item.status === "inactive" && <Clock className="size-3 text-slate-500 shrink-0" />}
-                                                    {item.status === "suspended" && <XCircle className="size-3 text-rose-600 shrink-0" />}
-                                                    <span className="capitalize">{item.status}</span>
-                                                </span>
+                                                {item.isSuspended || item.status === "suspended" ? (
+                                                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-red-100 border border-red-200 px-2.5 py-1 text-xs font-bold text-red-600">
+                                                        <Ban className="size-3.5 shrink-0" />
+                                                        <span>Suspended</span>
+                                                    </div>
+                                                ) : item.status === "active" ? (
+                                                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-[#AEE295]/20 border border-[#AEE295]/35 px-2.5 py-1 text-xs font-bold text-[#3B7A1E]">
+                                                        <CheckCircle2 className="size-3.5 shrink-0" />
+                                                        <span>Active</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-bold text-slate-500">
+                                                        <Clock className="size-3.5 shrink-0" />
+                                                        <span>Inactive</span>
+                                                    </div>
+                                                )}
                                             </TableCell>
 
                                             {/* Joined Date */}
@@ -577,9 +589,58 @@ export function AdminTable() {
                     </DialogHeader>
 
                     {pendingSuspendAdmin && (
-                        <div className="my-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-                            <p className="text-sm font-bold text-[#4B5161]">{pendingSuspendAdmin.name}</p>
-                            <p className="text-xs font-medium text-slate-500">{pendingSuspendAdmin.email}</p>
+                        <div className="space-y-3 my-2">
+                            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                                <p className="text-sm font-bold text-[#4B5161]">{pendingSuspendAdmin.name}</p>
+                                <p className="text-xs font-medium text-slate-500">{pendingSuspendAdmin.email}</p>
+                            </div>
+
+                            {/* Suspension Duration Selector */}
+                            <div className="w-full text-left space-y-1.5">
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider text-[10px]">
+                                    Suspension Duration
+                                </label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger className="w-full h-10 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-100 focus:border-red-400 focus:outline-hidden cursor-pointer flex items-center justify-between">
+                                        <span>
+                                            {suspendDays === 1
+                                                ? "1 day"
+                                                : suspendDays === 3
+                                                    ? "3 days"
+                                                    : suspendDays === 7
+                                                        ? "7 days"
+                                                        : suspendDays === 14
+                                                            ? "14 days"
+                                                            : suspendDays === 30
+                                                                ? "30 days"
+                                                                : "Indefinite"}
+                                        </span>
+                                        <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-(--anchor-width) min-w-[200px] rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+                                        {[
+                                            { value: 1, label: "1 day" },
+                                            { value: 3, label: "3 days" },
+                                            { value: 7, label: "7 days" },
+                                            { value: 14, label: "14 days" },
+                                            { value: 30, label: "30 days" },
+                                            { value: 0, label: "Indefinite" },
+                                        ].map((item) => (
+                                            <DropdownMenuItem
+                                                key={item.value}
+                                                onClick={() => setSuspendDays(item.value)}
+                                                className={cn(
+                                                    "px-3 py-2 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                                                    suspendDays === item.value ? "bg-red-50 text-red-600 font-extrabold" : "text-slate-700 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                <span>{item.label}</span>
+                                                {suspendDays === item.value && <Check className="size-3.5 text-red-600" />}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     )}
 

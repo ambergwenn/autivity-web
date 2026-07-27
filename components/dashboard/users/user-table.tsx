@@ -90,7 +90,7 @@ export function UserTable() {
     // Suspend confirmation state
     const [pendingSuspendUser, setPendingSuspendUser] = React.useState<UserItem | null>(null);
     const [confirmSuspendOpen, setConfirmSuspendOpen] = React.useState<boolean>(false);
-    const [suspendDuration, setSuspendDuration] = React.useState<string>("87600h");
+    const [suspendDays, setSuspendDays] = React.useState<number>(7);
     const [suspending, setSuspending] = React.useState<boolean>(false);
 
     // Unsuspend confirmation state
@@ -170,14 +170,14 @@ export function UserTable() {
 
     const requestSuspend = (user: UserItem) => {
         setPendingSuspendUser(user);
-        setSuspendDuration("87600h");
+        setSuspendDays(7);
         setConfirmSuspendOpen(true);
     };
 
     const handleConfirmSuspend = async () => {
         if (!pendingSuspendUser) return;
         setSuspending(true);
-        const res = await toggleSuspendUser(pendingSuspendUser.id, true, suspendDuration);
+        const res = await toggleSuspendUser(pendingSuspendUser.id, true, suspendDays);
         if (res.success) {
             setUsers((prev) =>
                 prev.map((u) =>
@@ -207,7 +207,7 @@ export function UserTable() {
     const handleConfirmUnsuspend = async () => {
         if (!pendingUnsuspendUser) return;
         setSuspending(true);
-        const res = await toggleSuspendUser(pendingUnsuspendUser.id, false, "none");
+        const res = await toggleSuspendUser(pendingUnsuspendUser.id, false, 0);
         if (res.success) {
             setUsers((prev) =>
                 prev.map((u) =>
@@ -920,19 +920,46 @@ export function UserTable() {
                                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider text-[10px]">
                                     Suspension Duration
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={suspendDuration}
-                                        onChange={(e) => setSuspendDuration(e.target.value)}
-                                        className="w-full appearance-none h-10 rounded-2xl border border-slate-200 bg-slate-50 pl-3.5 pr-8 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-100 focus:border-red-400 focus:outline-hidden cursor-pointer"
-                                    >
-                                        <option value="24h">24 hours</option>
-                                        <option value="168h">7 days</option>
-                                        <option value="720h">1 month</option>
-                                        <option value="87600h">Permanent</option>
-                                    </select>
-                                    <ChevronDown className="pointer-events-none absolute right-3 top-3 size-4 text-slate-400" />
-                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger className="w-full h-10 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-100 focus:border-red-400 focus:outline-hidden cursor-pointer flex items-center justify-between">
+                                        <span>
+                                            {suspendDays === 1
+                                                ? "1 day"
+                                                : suspendDays === 3
+                                                    ? "3 days"
+                                                    : suspendDays === 7
+                                                        ? "7 days"
+                                                        : suspendDays === 14
+                                                            ? "14 days"
+                                                            : suspendDays === 30
+                                                                ? "30 days"
+                                                                : "Indefinite"}
+                                        </span>
+                                        <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-(--anchor-width) min-w-[200px] rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+                                        {[
+                                            { value: 1, label: "1 day" },
+                                            { value: 3, label: "3 days" },
+                                            { value: 7, label: "7 days" },
+                                            { value: 14, label: "14 days" },
+                                            { value: 30, label: "30 days" },
+                                            { value: 0, label: "Indefinite" },
+                                        ].map((item) => (
+                                            <DropdownMenuItem
+                                                key={item.value}
+                                                onClick={() => setSuspendDays(item.value)}
+                                                className={cn(
+                                                    "px-3 py-2 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                                                    suspendDays === item.value ? "bg-red-50 text-red-600 font-extrabold" : "text-slate-700 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                <span>{item.label}</span>
+                                                {suspendDays === item.value && <Check className="size-3.5 text-red-600" />}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             <div className="flex items-center gap-3 w-full pt-2">
