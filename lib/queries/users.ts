@@ -21,6 +21,8 @@ export interface UserItem {
   university?: string;
   prcNumber?: string;
   idImageUrl?: string | null;
+  learnerCode?: string | null;
+  learnerName?: string | null;
   isSuspended?: boolean;
   suspendedUntil?: string | null;
 }
@@ -137,6 +139,20 @@ export async function getUsers(): Promise<UserItem[]> {
       }
     }
 
+    // Map student code -> student name from students table
+    const studentMapByCode: Record<string, string> = {};
+    if (studentsRes.data) {
+      for (const s of studentsRes.data) {
+        const code = (s.learner_code || s.student_code || "").trim();
+        if (code) {
+          const combinedStudentName = `${s.first_name || ""} ${s.last_name || ""}`.trim();
+          const studentName = combinedStudentName || s.full_name || s.name || "Student Learner";
+          studentMapByCode[code] = studentName;
+          studentMapByCode[code.toLowerCase()] = studentName;
+        }
+      }
+    }
+
     const now = new Date();
 
     // Process profiles (teachers, parents, admins)
@@ -175,6 +191,11 @@ export async function getUsers(): Promise<UserItem[]> {
         const rawIdImg = p.id_image_url || p.id_image;
         const idImageUrl = rawIdImg ? await getTeacherIdUrl(rawIdImg) : null;
 
+        const learnerCode = (p.learner_code || p.student_code || "").trim() || null;
+        const learnerName = learnerCode
+          ? studentMapByCode[learnerCode] || studentMapByCode[learnerCode.toLowerCase()] || null
+          : null;
+
         return {
           id: p.id,
           name: profileName,
@@ -188,6 +209,8 @@ export async function getUsers(): Promise<UserItem[]> {
           university: p.university || p.school || "N/A",
           prcNumber: p.prc_number || p.prc_id || "N/A",
           idImageUrl,
+          learnerCode,
+          learnerName,
           isSuspended: isCurrentlySuspended,
           suspendedUntil: p.suspended_until || null,
         };
@@ -216,11 +239,12 @@ export async function getUsers(): Promise<UserItem[]> {
         "Student Learner";
 
       const createdDateVal = s.created_at || s.registered_at || s.updated_at;
+      const sCode = (s.learner_code || s.student_code || "").trim() || null;
 
       return {
         id: s.id,
         name: studentName,
-        email: s.student_code ? `Code: ${s.student_code}` : "Student Account",
+        email: sCode ? `Code: ${sCode}` : "Student Account",
         role: "student",
         status,
         verificationStatus,
@@ -230,6 +254,8 @@ export async function getUsers(): Promise<UserItem[]> {
         university: "N/A",
         prcNumber: "N/A",
         idImageUrl: null,
+        learnerCode: sCode,
+        learnerName: studentName,
         isSuspended: isCurrentlySuspended,
         suspendedUntil: s.suspended_until || null,
       };

@@ -833,6 +833,40 @@ export function UserTable() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Role-Specific Details: Parent */}
+                                    {selectedUser.role === "parent" && (
+                                        <div className="pt-3 border-t border-slate-200/60 mt-2 space-y-2">
+                                            <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px]">
+                                                Linked Learner Account
+                                            </span>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+                                                <div>
+                                                    <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px]">
+                                                        Learner Code
+                                                    </span>
+                                                    <span className="font-mono font-bold text-slate-800 text-sm bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200/80 inline-block mt-1">
+                                                        {selectedUser.learnerCode || "N/A"}
+                                                    </span>
+                                                </div>
+
+                                                <div>
+                                                    <span className="font-bold text-slate-400 block uppercase tracking-wider text-[10px]">
+                                                        Learner Name
+                                                    </span>
+                                                    <span className="font-bold text-slate-800 text-sm block mt-1.5">
+                                                        {selectedUser.learnerName ? (
+                                                            <span className="text-[#2E79B9]">{selectedUser.learnerName}</span>
+                                                        ) : selectedUser.learnerCode ? (
+                                                            <span className="text-amber-600 font-semibold">Unlinked / Not found</span>
+                                                        ) : (
+                                                            <span className="text-slate-400 font-normal">N/A</span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Green Verify Button for Unverified Users */}
