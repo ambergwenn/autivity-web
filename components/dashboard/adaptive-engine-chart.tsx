@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp, Activity, ChevronDown, AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
+import { TrendingUp, Activity, ChevronDown, AlertTriangle, CheckCircle2, Sparkles, Check } from "lucide-react";
 import { Label, Pie, PieChart } from "recharts";
 
 import {
@@ -18,6 +18,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 import {
   getDashboardAdaptiveEngineStats,
@@ -145,22 +152,43 @@ export function AdaptiveEngineChart() {
           </div>
 
           {/* Time Range Filter Selector */}
-          <div className="relative shrink-0">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              aria-label="Filter time range"
-              className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#62A9E6] focus:outline-hidden cursor-pointer"
-              style={{ color: "#4B5161" }}
-            >
-              <option value="7d">7 Days</option>
-              <option value="30d">30 Days</option>
-              <option value="90d">90 Days</option>
-              <option value="6m">6 Months</option>
-              <option value="1y">1 Year</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="h-8.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-[#4B5161] shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#62A9E6] focus:outline-hidden cursor-pointer flex items-center gap-2">
+              <span>
+                {timeRange === "7d"
+                  ? "7 Days"
+                  : timeRange === "30d"
+                    ? "30 Days"
+                    : timeRange === "90d"
+                      ? "90 Days"
+                      : timeRange === "6m"
+                        ? "6 Months"
+                        : "1 Year"}
+              </span>
+              <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[120px] rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+              {[
+                { value: "7d", label: "7 Days" },
+                { value: "30d", label: "30 Days" },
+                { value: "90d", label: "90 Days" },
+                { value: "6m", label: "6 Months" },
+                { value: "1y", label: "1 Year" },
+              ].map((item) => (
+                <DropdownMenuItem
+                  key={item.value}
+                  onClick={() => setTimeRange(item.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                    timeRange === item.value ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  <span>{item.label}</span>
+                  {timeRange === item.value && <Check className="size-3.5 text-[#2E79B9]" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 

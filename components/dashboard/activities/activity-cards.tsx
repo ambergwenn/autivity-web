@@ -19,7 +19,7 @@ export function ActivityCards({ initialStats }: ActivityCardsProps) {
     const [stats, setStats] = React.useState<ActivityCardStatsData>(initialStats || {
         totalActivities: 0,
         activitiesCreatedThisMonth: 0,
-        mostAssignedCategory: "General",
+        mostAssignedCategory: "",
         assignedStudentsCountForTopCategory: 0,
     });
     const [loading, setLoading] = React.useState<boolean>(!initialStats);

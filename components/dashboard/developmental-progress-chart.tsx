@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon, ChevronDown, Check } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
@@ -18,6 +18,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 import {
   getDashboardDevelopmentalProgressData,
@@ -47,10 +54,37 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const filterOptions = [
+  { value: "all", label: "All Months (Jan - Dec)" },
+  { value: "h1", label: "First Half (Jan - Jun)" },
+  { value: "h2", label: "Second Half (Jul - Dec)" },
+  { value: "q1", label: "Q1 (Jan - Mar)" },
+  { value: "q2", label: "Q2 (Apr - Jun)" },
+  { value: "q3", label: "Q3 (Jul - Sep)" },
+  { value: "q4", label: "Q4 (Oct - Dec)" },
+  { value: "last3", label: "Last 3 Months (Oct - Dec)" },
+  { value: "jan", label: "January" },
+  { value: "feb", label: "February" },
+  { value: "mar", label: "March" },
+  { value: "apr", label: "April" },
+  { value: "may", label: "May" },
+  { value: "jun", label: "June" },
+  { value: "jul", label: "July" },
+  { value: "aug", label: "August" },
+  { value: "sep", label: "September" },
+  { value: "oct", label: "October" },
+  { value: "nov", label: "November" },
+  { value: "dec", label: "December" },
+];
+
 export function DevelopmentalProgressChart() {
   const [selectedFilter, setSelectedFilter] = React.useState<string>("all");
   const [dataAll, setDataAll] = React.useState<DevelopmentalProgressPoint[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
+
+  const currentLabel = React.useMemo(() => {
+    return filterOptions.find((opt) => opt.value === selectedFilter)?.label || "All Months (Jan - Dec)";
+  }, [selectedFilter]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -183,37 +217,27 @@ export function DevelopmentalProgressChart() {
           </div>
 
           {/* Month Filter Selector */}
-          <div className="relative shrink-0">
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              aria-label="Filter month range"
-              className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#C084FC] focus:outline-hidden cursor-pointer"
-              style={{ color: "#4B5161" }}
-            >
-              <option value="all">All Months (Jan - Dec)</option>
-              <option value="h1">First Half (Jan - Jun)</option>
-              <option value="h2">Second Half (Jul - Dec)</option>
-              <option value="q1">Q1 (Jan - Mar)</option>
-              <option value="q2">Q2 (Apr - Jun)</option>
-              <option value="q3">Q3 (Jul - Sep)</option>
-              <option value="q4">Q4 (Oct - Dec)</option>
-              <option value="last3">Last 3 Months (Oct - Dec)</option>
-              <option value="jan">January</option>
-              <option value="feb">February</option>
-              <option value="mar">March</option>
-              <option value="apr">April</option>
-              <option value="may">May</option>
-              <option value="jun">June</option>
-              <option value="jul">July</option>
-              <option value="aug">August</option>
-              <option value="sep">September</option>
-              <option value="oct">October</option>
-              <option value="nov">November</option>
-              <option value="dec">December</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="h-8.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-[#4B5161] shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#C084FC] focus:outline-hidden cursor-pointer flex items-center gap-2">
+              <span>{currentLabel}</span>
+              <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px] max-h-60 overflow-y-auto rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+              {filterOptions.map((item) => (
+                <DropdownMenuItem
+                  key={item.value}
+                  onClick={() => setSelectedFilter(item.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                    selectedFilter === item.value ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  <span>{item.label}</span>
+                  {selectedFilter === item.value && <Check className="size-3.5 text-[#2E79B9]" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 

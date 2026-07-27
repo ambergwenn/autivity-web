@@ -314,7 +314,7 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
     }
 
     let topCategory = "";
-    let maxAssignments = -1;
+    let maxAssignments = 0;
 
     for (const cat of Array.from(categoriesSet)) {
       const count = categoryAssignmentsCount[cat] || 0;
@@ -324,10 +324,6 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
       }
     }
 
-    if (!topCategory && categoriesSet.size > 0) {
-      topCategory = Array.from(categoriesSet)[0];
-    }
-
     const assignedStudentsCountForTopCategory = (topCategory && categoryStudentsSet[topCategory])
       ? categoryStudentsSet[topCategory].size
       : 0;
@@ -335,7 +331,7 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
     return {
       totalActivities: totalCount !== null ? totalCount : activitiesList.length,
       activitiesCreatedThisMonth,
-      mostAssignedCategory: topCategory || "General",
+      mostAssignedCategory: topCategory,
       assignedStudentsCountForTopCategory,
     };
   } catch (error) {
@@ -343,7 +339,7 @@ export async function getActivityCardStats(): Promise<ActivityCardStatsData> {
     return {
       totalActivities: 0,
       activitiesCreatedThisMonth: 0,
-      mostAssignedCategory: "General",
+      mostAssignedCategory: "",
       assignedStudentsCountForTopCategory: 0,
     };
   }

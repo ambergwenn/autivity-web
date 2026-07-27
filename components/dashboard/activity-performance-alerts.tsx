@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, ChevronDown, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, Search, Check } from "lucide-react";
 
 import {
   Card,
@@ -19,6 +19,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 import {
   getActivityPerformanceAlerts,
@@ -136,41 +143,89 @@ export function ActivityPerformanceAlerts() {
             </div>
 
             {/* Category Filter Selector */}
-            <div className="relative shrink-0">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                aria-label="Filter category"
-                className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer"
-                style={{ color: "#4B5161" }}
-              >
-                <option value="all">All Categories</option>
-                <option value="high-alerts">High Alerts Only</option>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="h-8.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-[#4B5161] shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer flex items-center gap-2">
+                <span>
+                  {categoryFilter === "all"
+                    ? "All Categories"
+                    : categoryFilter === "high-alerts"
+                      ? "High Alerts Only"
+                      : categoryFilter}
+                </span>
+                <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[160px] max-h-60 overflow-y-auto rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+                <DropdownMenuItem
+                  onClick={() => setCategoryFilter("all")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                    categoryFilter === "all" ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  <span>All Categories</span>
+                  {categoryFilter === "all" && <Check className="size-3.5 text-[#2E79B9]" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setCategoryFilter("high-alerts")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                    categoryFilter === "high-alerts" ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                  )}
+                >
+                  <span>High Alerts Only</span>
+                  {categoryFilter === "high-alerts" && <Check className="size-3.5 text-[#2E79B9]" />}
+                </DropdownMenuItem>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
+                  <DropdownMenuItem
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                      categoryFilter === cat ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
+                    <span className="truncate">{cat}</span>
+                    {categoryFilter === cat && <Check className="size-3.5 text-[#2E79B9] shrink-0 ml-2" />}
+                  </DropdownMenuItem>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
-            </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Sort Selector */}
-            <div className="relative shrink-0">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                aria-label="Sort activities"
-                className="appearance-none h-8.5 rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-7 py-1 text-xs font-bold shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer"
-                style={{ color: "#4B5161" }}
-              >
-                <option value="highest-bailout">Highest Bailout</option>
-                <option value="lowest-bailout">Lowest Bailout</option>
-                <option value="most-sessions">Most Sessions</option>
-                <option value="alphabetical">Alphabetical (A-Z)</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-2.5 size-3.5 text-slate-400" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="h-8.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-[#4B5161] shadow-2xs transition-colors hover:bg-slate-100 focus:border-[#E67A88] focus:outline-hidden cursor-pointer flex items-center gap-2">
+                <span>
+                  {sortBy === "highest-bailout"
+                    ? "Highest Bailout"
+                    : sortBy === "lowest-bailout"
+                      ? "Lowest Bailout"
+                      : sortBy === "most-sessions"
+                        ? "Most Sessions"
+                        : "Alphabetical (A-Z)"}
+                </span>
+                <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[150px] rounded-2xl p-1.5 bg-white border border-slate-200 shadow-xl z-50">
+                {[
+                  { value: "highest-bailout", label: "Highest Bailout" },
+                  { value: "lowest-bailout", label: "Lowest Bailout" },
+                  { value: "most-sessions", label: "Most Sessions" },
+                  { value: "alphabetical", label: "Alphabetical (A-Z)" },
+                ].map((item) => (
+                  <DropdownMenuItem
+                    key={item.value}
+                    onClick={() => setSortBy(item.value)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer flex items-center justify-between transition-colors",
+                      sortBy === item.value ? "bg-slate-100 text-[#2E79B9]" : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
+                    <span>{item.label}</span>
+                    {sortBy === item.value && <Check className="size-3.5 text-[#2E79B9]" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
