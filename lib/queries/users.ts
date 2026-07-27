@@ -240,7 +240,7 @@ export async function verifyUser(
 
     const { data, error } = await supabase
       .from("profiles")
-      .update({ is_verified: true, status: "active" })
+      .update({ is_verified: true })
       .eq("id", userId)
       .select();
 
