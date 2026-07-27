@@ -173,13 +173,13 @@ export default function Footer() {
             {/* Legal Links */}
             <div className="flex items-center gap-6">
               <Link
-                href="#"
+                href="/privacy"
                 className="text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 Privacy Policy
               </Link>
               <Link
-                href="#"
+                href="/terms"
                 className="text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 Terms &amp; Conditions
