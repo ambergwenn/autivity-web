@@ -1,48 +1,39 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase-server"
+import DashboardLayoutClient from "./dashboard-layout-client"
 
-import { usePathname } from "next/navigation"
-import { AppSidebar } from "@/components/dashboard/sidebar"
-import {
-    SidebarInset,
-    SidebarProvider,
-    SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const pathname = usePathname()
+    const supabase = await createClient()
 
-    const getHeaderTitle = () => {
-        if (pathname.startsWith("/dashboard/user")) return "Users"
-        if (pathname.startsWith("/dashboard/class")) return "Classes"
-        if (pathname.startsWith("/dashboard/activities")) return "Content"
-        if (pathname.startsWith("/dashboard/content")) return "Content"
-        if (pathname.startsWith("/dashboard/admin")) return "Admins"
-        if (pathname.startsWith("/dashboard/profile")) return "Profile"
-        return "Dashboard"
+    // Fetch current user and session via getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+        redirect("/login")
     }
 
-    return (
-        <SidebarProvider>
-            <AppSidebar />
+    // Role check: Only allow users with the 'admin' role
+    let role = user.user_metadata?.role
 
-            <SidebarInset>
-                <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm px-4">
-                    <SidebarTrigger className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" />
-                    <Separator orientation="vertical" className="h-5 bg-slate-200" />
-                    <span className="font-quicksand text-sm text-slate-500">
-                        {getHeaderTitle()}
-                    </span>
-                </header>
+    if (role !== "admin") {
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single()
+        
+        role = profile?.role
+    }
 
-                <main className="flex-1 bg-[#F5F7FA] p-6">
-                    {children}
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
-    )
+    if (role !== "admin") {
+        // Log out the session cleanly
+        await supabase.auth.signOut()
+        redirect("/login?error=unauthorized")
+    }
+
+    return <DashboardLayoutClient>{children}</DashboardLayoutClient>
 }

@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 
 import {
@@ -39,6 +42,7 @@ export function NavUser({
     email,
     avatar,
 }: NavUserProps) {
+    const router = useRouter()
     return (
         <SidebarMenu>
             <SidebarMenuItem>
@@ -107,6 +111,7 @@ export function NavUser({
                         <DropdownMenuItem
                             onClick={async () => {
                                 await supabase.auth.signOut();
+                                router.refresh();
                                 window.location.href = "/login";
                             }}
                             className="gap-2 rounded-lg px-3 py-2 text-sm font-quicksand text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700 group/item transition-colors duration-150"
