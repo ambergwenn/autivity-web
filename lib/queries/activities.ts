@@ -445,7 +445,7 @@ export async function updateActivityDetails(
           .from("activities")
           .update(payload)
           .eq("id", activityId);
-        
+
         if (retryErr) throw retryErr;
         return { success: true };
       }
