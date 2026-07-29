@@ -18,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -261,22 +260,20 @@ export function ActivityPerformanceAlerts() {
               <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200 shadow-2xs">
                 Avg. Mistakes
               </TableHead>
-              <TableHead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs text-right pr-6 border-b border-slate-200 shadow-2xs">
-                Actions
-              </TableHead>
+
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-400 font-semibold">
+                <TableCell colSpan={6} className="text-center py-8 text-slate-400 font-semibold">
                   Loading activity performance data...
                 </TableCell>
               </TableRow>
             ) : processedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-400 font-semibold">
+                <TableCell colSpan={6} className="text-center py-8 text-slate-400 font-semibold">
                   No matching activities found.
                 </TableCell>
               </TableRow>
@@ -320,15 +317,7 @@ export function ActivityPerformanceAlerts() {
                     <TableCell className="font-mono font-medium text-slate-600">
                       {item.avgMistakes}
                     </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
-                      >
-                        Edit
-                      </Button>
-                    </TableCell>
+
                   </TableRow>
                 );
               })
