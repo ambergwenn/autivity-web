@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Navbar from "@/components/navbar"
 import { LoginForm } from "@/components/login-form"
 import Image from "next/image"
@@ -71,7 +72,9 @@ export default function LoginPage() {
       />
 
       <div className="w-full max-w-sm md:max-w-md transition-all duration-300 z-20">
-        <LoginForm />
+        <Suspense fallback={<div className="w-full h-96 animate-pulse bg-white/50 rounded-2xl" />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
     </div>

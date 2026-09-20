@@ -106,7 +106,7 @@ export async function getDashboardMilestoneKPIs(): Promise<MilestoneKPIStats> {
   try {
     const [totalRes, achievedRes] = await Promise.all([
       supabase.from("student_milestones").select("*", { count: "exact", head: true }),
-      supabase.from("student_milestones").select("*", { count: "exact", head: true }).eq("status", "achieved"),
+      supabase.from("student_milestones").select("*", { count: "exact", head: true }).ilike("status", "achieved"),
     ]);
 
     if (totalRes.error) throw totalRes.error;
@@ -135,13 +135,18 @@ export interface AdaptiveEngineStats {
 
 /**
  * Fetches adaptive engine stats from 'student_sessions' table based on 'mistakes' column.
- * - 0 mistakes -> upshifts count + 1
- * - 1 or 2 mistakes -> standard count + 1
- * - 3 or higher mistakes -> bailouts count + 1
+ * Filters out manual teacher classroom sessions (activity_type === 'classroom').
+ * Matches mobile set-manager.tsx difficulty shift thresholds:
+ * - 0 mistakes -> upshifts count + 1 (tier promoted)
+ * - 1 mistake -> standard count + 1 (tier maintained)
+ * - 2 or higher mistakes -> bailouts count + 1 (tier downgraded)
  */
 export async function getDashboardAdaptiveEngineStats(days?: number): Promise<AdaptiveEngineStats> {
   try {
-    let query = supabase.from("student_sessions").select("mistakes");
+    let query = supabase
+      .from("student_sessions")
+      .select("mistakes, activity_type")
+      .neq("activity_type", "classroom");
 
     if (days) {
       const pastDate = new Date();
@@ -162,9 +167,9 @@ export async function getDashboardAdaptiveEngineStats(days?: number): Promise<Ad
         const mistakes = row.mistakes ?? 0;
         if (mistakes === 0) {
           upshifts++;
-        } else if (mistakes === 1 || mistakes === 2) {
+        } else if (mistakes === 1) {
           standard++;
-        } else if (mistakes >= 3) {
+        } else if (mistakes >= 2) {
           bailouts++;
         }
       }
@@ -347,11 +352,23 @@ export interface ActivityPerformanceAlertItem {
 }
 
 /**
+ * Normalizes activity paths by stripping outer quotes and leading activity/tracing/ prefixes
+ */
+function normalizeActivityPath(rawPath: string): string {
+  if (!rawPath) return "";
+  let clean = rawPath.trim().replace(/^"|"$/g, "");
+  if (clean.startsWith("activity/tracing/")) {
+    clean = clean.replace(/^activity\/tracing\//, "");
+  }
+  return clean.toLowerCase();
+}
+
+/**
  * Fetches activities and student_sessions from Supabase.
  * Unnests session activity_path and matches with activities table on activities.path.
  * Calculates:
  * - totalSessions
- * - bailoutRate (% of sessions with mistakes >= 3)
+ * - bailoutRate (% of sessions with mistakes >= 2)
  * - avgMistakes (average mistakes per session)
  * Returns items sorted by bailoutRate descending.
  */
@@ -368,6 +385,22 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
     const activities = activitiesRes.data || [];
     const sessions = sessionsRes.data || [];
 
+    const subCategoryLevelsMap = new Map<string, number[]>();
+    for (const act of activities) {
+      const subCatKey = ((act as any).sub_category || act.category || "general").trim().toLowerCase();
+      const rawNum = typeof act.difficulty_level === "number"
+        ? act.difficulty_level
+        : parseInt(String(act.difficulty_level || ""), 10);
+      if (!isNaN(rawNum)) {
+        const existing = subCategoryLevelsMap.get(subCatKey) || [];
+        if (!existing.includes(rawNum)) {
+          existing.push(rawNum);
+        }
+        subCategoryLevelsMap.set(subCatKey, existing);
+      }
+    }
+    subCategoryLevelsMap.forEach((levels) => levels.sort((a, b) => a - b));
+
     const activityMap = new Map<string, {
       id: string;
       title: string;
@@ -378,10 +411,15 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
 
     activities.forEach((act) => {
       if (act.path) {
-        const level = typeof act.difficulty_level === "number" ? act.difficulty_level : parseInt(String(act.difficulty_level || "0"), 10);
-        const diffLabel = getDifficultyLabel(level);
+        const subCatKey = ((act as any).sub_category || act.category || "general").trim().toLowerCase();
+        const subLevels = subCategoryLevelsMap.get(subCatKey) || [];
+        const rawDiff = act.difficulty_level !== undefined && act.difficulty_level !== null
+          ? act.difficulty_level
+          : 1;
+        const diffLabel = getDifficultyLabel(rawDiff, subLevels);
+        const normalized = normalizeActivityPath(act.path);
 
-        activityMap.set(act.path.trim(), {
+        activityMap.set(normalized, {
           id: String(act.id),
           title: act.title || "Untitled Activity",
           category: act.category || "General",
@@ -399,7 +437,7 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
 
     for (const session of sessions) {
       const mistakes = session.mistakes ?? 0;
-      const isBailout = mistakes >= 3;
+      const isBailout = mistakes >= 2;
 
       let paths: string[] = [];
       if (Array.isArray(session.activity_path)) {
@@ -416,13 +454,13 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
 
       for (const rawPath of paths) {
         if (!rawPath) continue;
-        const trimmedPath = rawPath.trim();
-        if (!activityMap.has(trimmedPath)) continue;
+        const normalized = normalizeActivityPath(rawPath);
+        if (!activityMap.has(normalized)) continue;
 
-        let m = pathMetrics.get(trimmedPath);
+        let m = pathMetrics.get(normalized);
         if (!m) {
           m = { totalSessions: 0, bailoutCount: 0, totalMistakes: 0 };
-          pathMetrics.set(trimmedPath, m);
+          pathMetrics.set(normalized, m);
         }
 
         m.totalSessions += 1;
@@ -433,8 +471,8 @@ export async function getActivityPerformanceAlerts(): Promise<ActivityPerformanc
 
     const items: ActivityPerformanceAlertItem[] = [];
 
-    activityMap.forEach((act, path) => {
-      const m = pathMetrics.get(path);
+    activityMap.forEach((act, normPath) => {
+      const m = pathMetrics.get(normPath);
       const totalSessions = m ? m.totalSessions : 0;
       const bailoutRate = totalSessions > 0 ? Number(((m!.bailoutCount / totalSessions) * 100).toFixed(1)) : 0;
       const avgMistakes = totalSessions > 0 ? Number((m!.totalMistakes / totalSessions).toFixed(1)) : 0;

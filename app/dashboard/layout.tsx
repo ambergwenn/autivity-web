@@ -35,5 +35,19 @@ export default async function DashboardLayout({
         redirect("/login?error=unauthorized")
     }
 
+    // Keep admin last_active timestamp and status updated
+    try {
+        await supabase
+            .from("profiles")
+            .update({
+                last_active: new Date().toISOString(),
+                status: "active",
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", user.id)
+    } catch (e) {
+        // Non-blocking
+    }
+
     return <DashboardLayoutClient>{children}</DashboardLayoutClient>
 }

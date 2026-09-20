@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Sparkles, Award, Info } from "lucide-react";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 
 import {
     Card,
@@ -123,7 +123,11 @@ export function ActivityMostAssigned({ initialData }: ActivityMostAssignedProps)
                                     cursor={false}
                                     content={<ChartTooltipContent hideLabel />}
                                 />
-                                <Bar dataKey="assignments" radius={6} />
+                                <Bar dataKey="assignments" radius={6}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ChartContainer>
 

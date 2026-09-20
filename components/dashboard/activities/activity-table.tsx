@@ -65,6 +65,7 @@ import {
     getCategoryBase,
     getRelativeDifficulty,
     calculateNewDifficulty,
+    getCategoryColor,
     type ActivityItem,
 } from "@/lib/queries/activities";
 
@@ -158,10 +159,16 @@ const mockActivities: ActivityItem[] = [
 const categoryBadgeStyles: Record<string, string> = {
     Tracing: "bg-[#62A9E6]/15 border border-[#62A9E6]/30 text-[#2E79B9]",
     "Bubble-Pop": "bg-[#ED529B]/15 border border-[#ED529B]/30 text-[#C22971]",
+    "Bubble Pop": "bg-[#ED529B]/15 border border-[#ED529B]/30 text-[#C22971]",
     "Drag-Drop": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+    "Drag and Drop": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
     Matching: "bg-[#AD99E6]/15 border border-[#AD99E6]/30 text-[#6444B8]",
     Patterning: "bg-[#AEE295]/20 border border-[#AEE295]/35 text-[#3B7A1E]",
     "Sensory Play": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+    Sequencing: "bg-[#FD9356]/15 border border-[#FD9356]/35 text-[#C45E1B]",
+    "Pick-n-Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
+    "Pick n Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
+    "Pick N Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
 };
 
 const difficultyBadgeStyles: Record<string, string> = {
@@ -177,7 +184,7 @@ const RELATIVE_DIFFICULTY_OPTIONS = [
     { value: 3, label: "Hard" },
 ];
 
-const FALLBACK_CATEGORIES = ["Tracing", "Bubble-Pop", "Drag-Drop", "Matching", "Patterning"];
+const FALLBACK_CATEGORIES = ["Tracing", "Bubble-Pop", "Drag-Drop", "Matching", "Patterning", "Sequencing", "Pick n Choose"];
 const FALLBACK_SUBCATEGORIES = [
     "Letter Tracing",
     "Line Tracing",
@@ -310,12 +317,19 @@ export function ActivityTable() {
             setEditTitle(selectedActivity.title || "");
             setEditCategory(selectedActivity.category || "Tracing");
             setEditSubCategory(selectedActivity.sub_category || "General");
-            setEditRelativeDifficulty(getRelativeDifficulty(selectedActivity.difficulty_level));
+
+            const subCat = (selectedActivity.sub_category || selectedActivity.category || "").trim().toLowerCase();
+            const subLevels = activities
+                .filter((a) => (a.sub_category || a.category || "").trim().toLowerCase() === subCat)
+                .map((a) => a.difficulty_level)
+                .filter((d) => typeof d === "number");
+
+            setEditRelativeDifficulty(getRelativeDifficulty(selectedActivity.difficulty_level, subLevels));
             setEditSkills(selectedActivity.skill_domain ? [...selectedActivity.skill_domain] : []);
             setEditIsHidden(Boolean(selectedActivity.is_hidden));
             setErrorMsg(null);
         }
-    }, [selectedActivity, detailsOpen]);
+    }, [selectedActivity, detailsOpen, activities]);
 
     const handleViewDetails = (item: ActivityItem) => {
         setSelectedActivity(item);
@@ -687,9 +701,11 @@ export function ActivityTable() {
                                 </TableRow>
                             ) : (
                                 processedActivities.map((item) => {
+                                    const catColor = getCategoryColor(item.category);
                                     const catStyle =
                                         categoryBadgeStyles[item.category] ||
-                                        "bg-slate-100 border border-slate-200 text-[#4B5161]";
+                                        categoryBadgeStyles[item.category.replace(/-/g, " ")] ||
+                                        null;
 
                                     const diffLabel = item.difficulty_label || getDifficultyLabel(item.difficulty_level);
                                     const diffStyle =
@@ -713,7 +729,7 @@ export function ActivityTable() {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-[#4B5161] text-sm">
-                                                            {item.title}
+                                                             {item.title}
                                                         </span>
                                                         {item.is_hidden && (
                                                             <span className="inline-flex items-center gap-1 rounded-md bg-slate-200/80 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
@@ -730,7 +746,17 @@ export function ActivityTable() {
 
                                             {/* Category Pill */}
                                             <TableCell>
-                                                <span className={`inline-flex items-center rounded-xl px-2.5 py-1 text-xs font-bold ${catStyle}`}>
+                                                <span
+                                                    className={cn(
+                                                        "inline-flex items-center rounded-xl px-2.5 py-1 text-xs font-bold",
+                                                        catStyle || "border"
+                                                    )}
+                                                    style={!catStyle ? {
+                                                        backgroundColor: `${catColor}18`,
+                                                        borderColor: `${catColor}40`,
+                                                        color: catColor,
+                                                    } : undefined}
+                                                >
                                                     {item.category}
                                                 </span>
                                             </TableCell>

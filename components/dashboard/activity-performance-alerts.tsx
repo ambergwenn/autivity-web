@@ -32,12 +32,44 @@ import {
 } from "@/src/services/dashboard";
 
 const categoryStyles: Record<string, string> = {
-  "Motor Skills": "bg-[#FDE047]/30 border border-[#FDE047]/60 text-[#854D0E]",
-  "Cognitive & Sorting": "bg-[#62A9E6]/10 border border-[#62A9E6]/25 text-[#2E79B9]",
-  "Sensory Regulation": "bg-[#AEE295]/20 border border-[#AEE295]/35 text-[#4D9E27]",
-  "Communication & AAC": "bg-[#E67A88]/15 border border-[#E67A88]/25 text-[#C04A59]",
+  // Activity Types / Game Categories (matching CATEGORY_COLORS & ActivityTable)
+  Tracing: "bg-[#62A9E6]/15 border border-[#62A9E6]/30 text-[#2E79B9]",
+  "Bubble-Pop": "bg-[#ED529B]/15 border border-[#ED529B]/30 text-[#C22971]",
+  "Bubble Pop": "bg-[#ED529B]/15 border border-[#ED529B]/30 text-[#C22971]",
+  "Drag-Drop": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+  "Drag and Drop": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+  "Drag & Drop": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+  Matching: "bg-[#AD99E6]/15 border border-[#AD99E6]/30 text-[#6444B8]",
+  Patterning: "bg-[#AEE295]/20 border border-[#AEE295]/35 text-[#3B7A1E]",
+  "Sensory Play": "bg-[#E8B00C]/15 border border-[#E8B00C]/30 text-[#A67C00]",
+  Sequencing: "bg-[#FD9356]/15 border border-[#FD9356]/35 text-[#C45E1B]",
+  "Pick n Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
+  "Pick-n-Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
+  "Pick N Choose": "bg-[#14B8A6]/15 border border-[#14B8A6]/35 text-[#0F766E]",
+  Flashcards: "bg-[#62A9E6]/15 border border-[#62A9E6]/30 text-[#2E79B9]",
+  Flashcard: "bg-[#62A9E6]/15 border border-[#62A9E6]/30 text-[#2E79B9]",
+
+  // Developmental Domains (matching DevelopmentalProgressChart)
+  "Motor Skills": "bg-[#FDE047]/25 border border-[#FDE047]/50 text-[#854D0E]",
+  "Cognitive & Sorting": "bg-[#62A9E6]/15 border border-[#62A9E6]/30 text-[#2E79B9]",
+  "Sensory Regulation": "bg-[#AEE295]/20 border border-[#AEE295]/35 text-[#3B7A1E]",
+  "Communication & AAC": "bg-[#E67A88]/15 border border-[#E67A88]/30 text-[#C04A59]",
   "Social & Turn-Taking": "bg-[#C084FC]/20 border border-[#C084FC]/40 text-[#8A35E5]",
 };
+
+function getCategoryBadgeClass(category?: string | null): string {
+  if (!category) return "bg-slate-100 border border-slate-200 text-slate-600";
+  if (categoryStyles[category]) return categoryStyles[category];
+
+  const normalized = category.trim().toLowerCase().replace(/-/g, " ");
+  for (const [key, style] of Object.entries(categoryStyles)) {
+    if (key.toLowerCase().replace(/-/g, " ") === normalized) {
+      return style;
+    }
+  }
+
+  return "bg-slate-100 border border-slate-200 text-slate-600";
+}
 
 const difficultyBadgeStyles: Record<string, string> = {
   Easy: "bg-emerald-100/70 border border-emerald-300/60 text-emerald-700",
@@ -280,9 +312,7 @@ export function ActivityPerformanceAlerts() {
             ) : (
               processedData.map((item) => {
                 const isHighBailout = item.bailoutRate > 30;
-                const categoryBadgeClass =
-                  categoryStyles[item.category] ||
-                  "bg-slate-100 border border-slate-200 text-slate-600";
+                const categoryBadgeClass = getCategoryBadgeClass(item.category);
 
                 return (
                   <TableRow key={item.id} className="hover:bg-slate-50/60 transition-colors">

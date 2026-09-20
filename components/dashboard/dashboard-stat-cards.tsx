@@ -174,7 +174,7 @@ export function DashboardStatCards({ stats }: DashboardStatCardsProps) {
     {
       id: "milestones",
       title: "Milestones",
-      mainMetric: data.milestones.achieved.toLocaleString(),
+      mainMetric: data.milestones.total.toLocaleString(),
       icon: Trophy,
       bgColor: "bg-[#AD99E6]",
       borderColor: "border-[#AD99E6]",

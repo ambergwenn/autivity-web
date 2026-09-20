@@ -111,20 +111,20 @@ export function AdaptiveEngineChart() {
     }
     if (bailoutRateVal > 20) {
       return {
-        text: `High Bailout Rate of ${bailoutsPct}%. Baseline curriculum is too difficult. Consider lowering difficulty tiers.`,
+        text: `High Bailout Rate (${bailoutsPct}%). Students frequently need the system to lower the difficulty. Check challenging activities in the alerts below.`,
         textColor: "text-red-600",
         icon: <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />,
       };
     }
     if (upshiftRateVal > 35) {
       return {
-        text: `High Upshift Rate of ${upshiftsPct}%. Students are mastering content instantly. Consider raising difficulty tiers.`,
+        text: `High Upshift Rate (${upshiftsPct}%). Students are completing tasks easily without mistakes. Consider adding more challenging activities.`,
         textColor: "text-amber-600",
         icon: <Sparkles className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />,
       };
     }
     return {
-      text: "System Healthy. Bailout rate is within clinical limits. Difficulty is properly calibrated.",
+      text: "System Balanced. Activity difficulty matches student skill levels well.",
       textColor: "text-emerald-600",
       icon: <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />,
     };

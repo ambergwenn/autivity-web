@@ -178,19 +178,19 @@ export function DevelopmentalProgressChart() {
 
     if (diff > 0) {
       return {
-        text: `Average overall mastery increased by +${diff.toFixed(1)}% across domains. The curriculum is working. Students are mastering skills.`,
+        text: `Student mastery increased by +${diff.toFixed(1)}% across skill areas compared to last month. Students are making steady progress.`,
         textColor: "text-emerald-600",
         icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />,
       };
     } else if (diff < 0) {
       return {
-        text: `Average overall mastery decreased by ${diff.toFixed(1)}% across domains. Students are struggling or regressing. The curriculum might be too hard, or teachers aren't intervening enough.`,
+        text: `Student mastery decreased by ${Math.abs(diff).toFixed(1)}% across skill areas compared to last month. Students may need extra practice or teacher support.`,
         textColor: "text-red-600",
         icon: <TrendingDown className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />,
       };
     } else {
       return {
-        text: "Average overall mastery remained flat (0.0%) across domains. Stagnation observed.",
+        text: "Student mastery remained steady (0.0%) across skill areas compared to last month.",
         textColor: "text-amber-600",
         icon: <Minus className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />,
       };

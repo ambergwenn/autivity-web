@@ -22,31 +22,103 @@ export interface MostAssignedCategoryItem {
 export const CATEGORY_COLORS: Record<string, string> = {
   Tracing: "#62A9E6",
   "Bubble-Pop": "#ED529B",
+  "Bubble Pop": "#ED529B",
   "Drag-Drop": "#E8B00C",
+  "Drag and Drop": "#E8B00C",
   Matching: "#AD99E6",
   Patterning: "#AEE295",
   "Sensory Play": "#E8B00C",
+  Sequencing: "#FD9356",
+  "Pick-n-Choose": "#14B8A6",
+  "Pick n Choose": "#14B8A6",
+  "Pick N Choose": "#14B8A6",
 };
 
-const EXTRA_PALETTE = ["#62A9E6", "#ED529B", "#E8B00C", "#AD99E6", "#AEE295", "#FD9356", "#F472B6", "#94A3B8"];
+const EXTRA_PALETTE = ["#62A9E6", "#ED529B", "#E8B00C", "#AD99E6", "#AEE295", "#FD9356", "#14B8A6", "#F472B6", "#94A3B8"];
 
 export function getCategoryColor(category: string, index: number = 0): string {
+  if (!category) return EXTRA_PALETTE[index % EXTRA_PALETTE.length];
   if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+
+  const normalized = category.trim().toLowerCase().replace(/-/g, " ");
+  for (const [key, color] of Object.entries(CATEGORY_COLORS)) {
+    if (key.toLowerCase().replace(/-/g, " ") === normalized) {
+      return color;
+    }
+  }
+
   return EXTRA_PALETTE[index % EXTRA_PALETTE.length];
 }
 
 /**
  * Base-10 Math Helper Functions:
- * Tens digit = Category Tier (e.g., 10 = Lines, 20 = Shapes, 30 = Letters)
- * Units digit = Relative Difficulty (1 = Easy, 2 = Medium, 3 = Hard)
+ * Tens digit = Category Tier (e.g., 10 = Lines, 20 = Shapes, 70 = Picture Sequencing)
+ * Units digit / rank in subcategory = Relative Difficulty (1 = Easy, 2 = Medium, 3 = Hard)
  */
-export function getCategoryBase(level: number): number {
-  return Math.floor((level || 10) / 10) * 10;
+export function getCategoryBase(level: number | string): number {
+  const num = typeof level === "number" ? level : parseInt(String(level || "10"), 10);
+  const safeNum = isNaN(num) ? 10 : num;
+  return Math.floor(safeNum / 10) * 10;
 }
 
-export function getRelativeDifficulty(level: number): number {
-  const mod = (level || 1) % 10;
-  return mod === 0 ? 1 : mod;
+/**
+ * Resolves difficulty label ('Easy' | 'Medium' | 'Hard') and relative index (1, 2, 3)
+ * relative to the sorted difficulty levels in its sub-category.
+ * E.g., for Picture Sequencing [75, 76, 77] -> 75 is Easy (1), 76 is Medium (2), 77 is Hard (3).
+ * For Letter Tracing [11, 12, 13] -> 11 is Easy (1), 12 is Medium (2), 13 is Hard (3).
+ */
+export function getRelativeDifficultyFromLevels(
+  level: number | string,
+  subCategoryLevels: number[] = []
+): { label: "Easy" | "Medium" | "Hard"; relativeIndex: 1 | 2 | 3 } {
+  if (typeof level === "string") {
+    const lower = level.trim().toLowerCase();
+    if (lower === "easy" || lower === "beginner") return { label: "Easy", relativeIndex: 1 };
+    if (lower === "medium" || lower === "intermediate") return { label: "Medium", relativeIndex: 2 };
+    if (lower === "hard" || lower === "advanced") return { label: "Hard", relativeIndex: 3 };
+  }
+
+  const num = typeof level === "number" ? level : parseInt(String(level || "1"), 10);
+  const safeNum = isNaN(num) ? 1 : num;
+
+  if (subCategoryLevels && subCategoryLevels.length > 0) {
+    const sorted = Array.from(new Set(subCategoryLevels)).sort((a, b) => a - b);
+    const idx = sorted.indexOf(safeNum);
+    if (idx !== -1) {
+      if (sorted.length === 1) {
+        return { label: "Easy", relativeIndex: 1 };
+      }
+      if (sorted.length === 2) {
+        return idx === 0
+          ? { label: "Easy", relativeIndex: 1 }
+          : { label: "Hard", relativeIndex: 3 };
+      }
+      if (sorted.length === 3) {
+        if (idx === 0) return { label: "Easy", relativeIndex: 1 };
+        if (idx === 1) return { label: "Medium", relativeIndex: 2 };
+        return { label: "Hard", relativeIndex: 3 };
+      }
+      // 4 or more levels
+      const ratio = idx / (sorted.length - 1);
+      if (ratio <= 0.34) return { label: "Easy", relativeIndex: 1 };
+      if (ratio <= 0.67) return { label: "Medium", relativeIndex: 2 };
+      return { label: "Hard", relativeIndex: 3 };
+    }
+  }
+
+  // Fallback if subCategoryLevels is not provided
+  if (safeNum === 1) return { label: "Easy", relativeIndex: 1 };
+  if (safeNum === 2) return { label: "Medium", relativeIndex: 2 };
+  if (safeNum === 3) return { label: "Hard", relativeIndex: 3 };
+
+  const mod = safeNum % 10;
+  if (mod === 0 || mod === 1) return { label: "Easy", relativeIndex: 1 };
+  if (mod === 2) return { label: "Medium", relativeIndex: 2 };
+  return { label: "Hard", relativeIndex: 3 };
+}
+
+export function getRelativeDifficulty(level: number | string, subCategoryLevels: number[] = []): number {
+  return getRelativeDifficultyFromLevels(level, subCategoryLevels).relativeIndex;
 }
 
 export function calculateNewDifficulty(categoryBase: number, relativeOffset: number): number {
@@ -54,15 +126,10 @@ export function calculateNewDifficulty(categoryBase: number, relativeOffset: num
 }
 
 /**
- * Transforms Base-10 tier system difficulty numbers into human readable difficulty labels.
- * 1 -> Easy, 2 -> Medium, 3 -> Hard, ELSE -> Custom
+ * Transforms difficulty values relative to subcategory levels into Easy, Medium, Hard labels.
  */
-export function getDifficultyLabel(level: number): "Easy" | "Medium" | "Hard" | "Custom" {
-  const rel = getRelativeDifficulty(level);
-  if (rel === 1) return "Easy";
-  if (rel === 2) return "Medium";
-  if (rel === 3) return "Hard";
-  return "Custom";
+export function getDifficultyLabel(level: number | string, subCategoryLevels: number[] = []): "Easy" | "Medium" | "Hard" {
+  return getRelativeDifficultyFromLevels(level, subCategoryLevels).label;
 }
 
 /**
@@ -223,8 +290,10 @@ export async function getMostAssignedCategories(): Promise<MostAssignedCategoryI
         }
         if (act.path) {
           const raw = String(act.path).trim();
+          const cleanPath = raw.toLowerCase().replace(/^activity\/tracing\//, "");
           pathToCategoryMap[raw] = cat;
           pathToCategoryMap[raw.toLowerCase()] = cat;
+          pathToCategoryMap[cleanPath] = cat;
         }
         if (act.title) {
           const raw = String(act.title).trim();
@@ -243,9 +312,11 @@ export async function getMostAssignedCategories(): Promise<MostAssignedCategoryI
       if (!itemStr) return null;
       const raw = itemStr.trim();
       const clean = raw.toLowerCase();
+      const cleanPath = clean.replace(/^activity\/tracing\//, "");
 
       if (pathToCategoryMap[raw]) return pathToCategoryMap[raw];
       if (pathToCategoryMap[clean]) return pathToCategoryMap[clean];
+      if (pathToCategoryMap[cleanPath]) return pathToCategoryMap[cleanPath];
 
       for (const cat of Object.keys(categoryCounts)) {
         if (cat.toLowerCase() === clean) return cat;
@@ -458,9 +529,40 @@ export async function getActivities(): Promise<ActivityItem[]> {
       return [];
     }
 
+    // Group unique numerical levels per subcategory
+    const subCategoryLevelsMap = new Map<string, number[]>();
+    for (const item of data) {
+      const subCatKey = (item.sub_category || item.subcategory || item.category || "general").trim().toLowerCase();
+      const rawNum = typeof item.difficulty_level === "number"
+        ? item.difficulty_level
+        : parseInt(String(item.difficulty_level || ""), 10);
+      if (!isNaN(rawNum)) {
+        const existing = subCategoryLevelsMap.get(subCatKey) || [];
+        if (!existing.includes(rawNum)) {
+          existing.push(rawNum);
+        }
+        subCategoryLevelsMap.set(subCatKey, existing);
+      }
+    }
+
+    subCategoryLevelsMap.forEach((levels) => {
+      levels.sort((a, b) => a - b);
+    });
+
     return data.map((item: any) => {
-      const level = typeof item.difficulty_level === "number" ? item.difficulty_level : parseInt(item.difficulty_level || "0", 10);
-      const difficultyLabel = getDifficultyLabel(level);
+      const subCatKey = (item.sub_category || item.subcategory || item.category || "general").trim().toLowerCase();
+      const subLevels = subCategoryLevelsMap.get(subCatKey) || [];
+
+      const rawDiff = item.difficulty_level !== undefined && item.difficulty_level !== null
+        ? item.difficulty_level
+        : (item.difficulty || item.difficulty_label || 1);
+      const difficultyLabel = getDifficultyLabel(rawDiff, subLevels);
+      const parsedLevel = typeof item.difficulty_level === "number"
+        ? item.difficulty_level
+        : parseInt(String(item.difficulty_level || "0"), 10);
+      const level = !isNaN(parsedLevel) && parsedLevel > 0
+        ? parsedLevel
+        : (subLevels[0] || 1);
 
       // Parse skill_domain array or comma-separated string if applicable
       let skillDomainArray: string[] = [];

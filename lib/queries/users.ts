@@ -158,7 +158,7 @@ export async function getUsers(): Promise<UserItem[]> {
     // Process profiles (teachers, parents, admins)
     const profilesList: UserItem[] = await Promise.all(
       (profilesRes.data || []).map(async (p: any) => {
-        const lastSignInVal = p.last_sign_in_at || p.last_sign_in || p.updated_at;
+        const lastSignInVal = p.last_active || p.last_sign_in_at || p.last_sign_in || p.updated_at || p.created_at;
         const lastSignIn = lastSignInVal ? new Date(lastSignInVal) : null;
 
         // Verification status from boolean column `is_verified`

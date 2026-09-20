@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { Eye, EyeOff, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Field,
@@ -17,12 +19,22 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const searchParams = useSearchParams()
+  const resetSuccess = searchParams.get("reset") === "success"
+  const urlError = searchParams.get("error")
+
   const [step, setStep] = useState<"email" | "password">("email")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
 
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(
+    urlError === "invalid_or_expired_token"
+      ? "Your reset token was invalid or has expired. Please try again."
+      : urlError === "unauthorized"
+      ? "Access denied. Admin privileges required."
+      : null
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,12 +60,31 @@ export function LoginForm({
           setErrorMsg("Access denied.")
         } else {
           console.log("Login success:", data)
+          // Update profile active status and timestamp
+          try {
+            await supabase
+              .from("profiles")
+              .update({
+                last_active: new Date().toISOString(),
+                last_sign_in_at: new Date().toISOString(),
+                status: "active",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", data.user.id)
+          } catch (err) {
+            console.warn("Could not update last_active on login:", err)
+          }
+
           // Redirect to dashboard
           window.location.href = "/dashboard"
         }
       }
     }
   }
+
+  const forgotPasswordHref = email.trim()
+    ? `/forgot-password?email=${encodeURIComponent(email.trim())}`
+    : "/forgot-password"
 
   return (
     <div
@@ -83,6 +114,14 @@ export function LoginForm({
             </FieldDescription>
           </div>
 
+          {/* Reset password success notice */}
+          {resetSuccess && (
+            <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs md:text-sm">
+              <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+              <span>Password successfully updated! You can now log in with your new password.</span>
+            </div>
+          )}
+
           {/* Conditional Field: Email vs Password */}
           {step === "email" ? (
             <Field className="gap-2">
@@ -98,6 +137,14 @@ export function LoginForm({
                 required
                 className="h-11 md:h-13 px-4 text-base md:text-lg rounded-xl border-slate-300 focus:border-[#62A9E6] focus:ring-4 focus:ring-[#62A9E6]/20 transition-all duration-300"
               />
+              <div className="flex justify-end mt-1">
+                <Link
+                  href={forgotPasswordHref}
+                  className="text-xs md:text-sm font-medium text-[#62A9E6] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </Field>
           ) : (
             <Field className="gap-2">
@@ -108,7 +155,7 @@ export function LoginForm({
                 <button
                   type="button"
                   onClick={() => setStep("email")}
-                  className="text-xs md:text-sm font-medium text-[#62A9E6] hover:underline"
+                  className="text-xs md:text-sm font-medium text-[#62A9E6] hover:underline cursor-pointer"
                 >
                   Change Email
                 </button>
@@ -126,7 +173,7 @@ export function LoginForm({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="size-5 md:size-6" />
@@ -134,6 +181,14 @@ export function LoginForm({
                     <Eye className="size-5 md:size-6" />
                   )}
                 </button>
+              </div>
+              <div className="flex justify-end mt-1">
+                <Link
+                  href={forgotPasswordHref}
+                  className="text-xs md:text-sm font-medium text-[#62A9E6] hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
             </Field>
           )}

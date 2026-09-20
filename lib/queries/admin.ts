@@ -13,6 +13,27 @@ export interface AdminItem {
   suspendedUntil?: string | null;
 }
 
+function formatLastActive(dateStr?: string | null): string {
+  if (!dateStr) return "Recently";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "Recently";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 5) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24 && date.getDate() === now.getDate()) return "Today";
+  if (diffDays === 1 || (diffHours < 48 && date.getDate() === new Date(now.getTime() - 86400000).getDate())) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+
+  return date.toLocaleDateString();
+}
+
 /**
  * Fetches all admin profiles (role = 'admin') from Supabase.
  */
@@ -43,14 +64,16 @@ export async function getAdminUsers(): Promise<AdminItem[]> {
       const suspendedUntilDate = p.suspended_until ? new Date(p.suspended_until) : null;
       const isSuspended = p.is_suspended === true || (suspendedUntilDate !== null && suspendedUntilDate > now) || p.status === "suspended";
 
+      const lastActiveRaw = p.last_active || p.last_sign_in_at || p.last_sign_in || p.updated_at || p.created_at;
+      const lastActiveDate = lastActiveRaw ? new Date(lastActiveRaw) : null;
+
       let statusVal: "active" | "inactive" | "suspended" = "active";
       if (isSuspended) {
         statusVal = "suspended";
+      } else if (p.status === "inactive" || (lastActiveDate && lastActiveDate < thirtyDaysAgo)) {
+        statusVal = "inactive";
       } else {
-        const lastActiveTime = p.last_active || p.updated_at || p.created_at;
-        if (lastActiveTime && new Date(lastActiveTime) < thirtyDaysAgo) {
-          statusVal = "inactive";
-        }
+        statusVal = "active";
       }
 
       return {
@@ -60,7 +83,7 @@ export async function getAdminUsers(): Promise<AdminItem[]> {
         status: statusVal,
         verificationStatus: isVerified ? "verified" : "pending",
         createdAt: p.created_at ? new Date(p.created_at).toLocaleDateString() : "N/A",
-        lastActive: p.last_active ? new Date(p.last_active).toLocaleDateString() : "Recently",
+        lastActive: formatLastActive(lastActiveRaw),
         university: p.university || "N/A",
         isSuspended,
         suspendedUntil: p.suspended_until || null,
